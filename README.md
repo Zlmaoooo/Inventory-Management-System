@@ -88,7 +88,7 @@ Whether you're a corner shop owner tired of counting boxes by hand, or a develop
 ## 🏗️ System Architecture
 
 <div align="center">
-<img src="./docs/architecture_diagram.png" width="80%" alt="System Architecture Diagram"/>
+<img src="/Architecture diagram/architecture_diagram.png" width="80%" alt="System Architecture Diagram"/>
 <br/>
 <sub><i>Layered 3-tier architecture — Presentation → Application → Data</i></sub>
 </div>
@@ -99,9 +99,9 @@ Whether you're a corner shop owner tired of counting boxes by hand, or a develop
 <summary>📐 <b>Click to view Use Case & Data Flow Diagrams</b></summary>
 <br/>
 <div align="center">
-<img src="./docs/usecase_diagram.png" width="80%" alt="Use Case Diagram"/>
+<img src="Architecture diagram/dfd_diagram.png" width="80%" alt="Use Case Diagram"/>
 <br/><br/>
-<img src="./docs/dfd_diagram.png" width="80%" alt="Data Flow Diagram"/>
+<img src="Architecture diagram/usecase_diagram.png" width="80%" alt="Data Flow Diagram"/>
 </div>
 </details>
 
