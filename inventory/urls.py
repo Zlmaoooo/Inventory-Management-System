@@ -3,9 +3,11 @@ from django.urls import path
 from .views import (
     dashboard_view,
     inventory_view,
+    landing_view,
     login_view,
     logout_view,
     products_view,
+    register_view,
     reports_view,
     root_redirect_view,
     settings_view,
@@ -15,8 +17,9 @@ from .views import (
 )
 
 urlpatterns = [
-    path("", root_redirect_view, name="root_redirect"),
+    path("", landing_view, name="landing"),
     path("login/", login_view, name="login"),
+    path("register/", register_view, name="register"),
     path("logout/", logout_view, name="logout"),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("products/", products_view, name="products"),

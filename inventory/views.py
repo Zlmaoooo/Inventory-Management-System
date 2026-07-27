@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db import models
 from django.shortcuts import redirect, render
 
@@ -8,14 +9,58 @@ from .forms import ProductForm
 from .models import Product
 
 
+def landing_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    return render(request, "landing.html")
+
+
 def root_redirect_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
-    return redirect("login")
+    return redirect("landing")
 
 
 def custom_404_view(request, exception=None):
     return render(request, "404.html", status=404)
+
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    
+    error = None
+    if request.method == "POST":
+        username_input = request.POST.get("username", "").strip()
+        email_input = request.POST.get("email", "").strip()
+        password_input = request.POST.get("password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
+
+        if not username_input or not email_input or not password_input:
+            error = "All fields are required."
+        elif password_input != confirm_password:
+            error = "Passwords do not match. Please re-enter your password."
+        elif len(password_input) < 6:
+            error = "Password must be at least 6 characters long."
+        elif User.objects.filter(username=username_input).exists():
+            error = f"Username '{username_input}' is already taken. Please choose another."
+        elif User.objects.filter(email=email_input).exists():
+            error = f"An account with email '{email_input}' already exists."
+        else:
+            user = User.objects.create_user(
+                username=username_input,
+                email=email_input,
+                password=password_input
+            )
+            login(request, user)
+            messages.success(request, f"Welcome to Invenza, {user.username}! Your account has been created.")
+            return redirect("dashboard")
+
+    context = {
+        "error": error,
+        "form_data": request.POST if request.method == "POST" else {}
+    }
+    return render(request, "register.html", context)
 
 
 def login_view(request):
@@ -37,7 +82,7 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect("login")
+    return redirect("landing")
 
 
 @login_required(login_url="login")

@@ -5,6 +5,41 @@ from django.urls import reverse
 from .models import Product
 
 
+class RegistrationAndLandingViewsTests(TestCase):
+    def test_landing_page_renders_for_unauthenticated_user(self):
+        response = self.client.get(reverse("landing"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Streamline Your Inventory")
+        self.assertContains(response, reverse("register"))
+
+    def test_successful_user_registration(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "newuser",
+                "email": "newuser@example.com",
+                "password": "password123",
+                "confirm_password": "password123",
+            },
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertTrue(User.objects.filter(username="newuser").exists())
+
+    def test_registration_password_mismatch_shows_error(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "mismatchuser",
+                "email": "mismatch@example.com",
+                "password": "password123",
+                "confirm_password": "differentpassword",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Passwords do not match")
+        self.assertFalse(User.objects.filter(username="mismatchuser").exists())
+
+
 class InventoryAndProductsViewsTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="password123")
@@ -84,15 +119,13 @@ class InventoryAndProductsViewsTests(TestCase):
         self.assertContains(products_response, "SUG-001")
 
     def test_role_based_access_to_admin_views(self):
-        # Non-staff user redirected to dashboard from admin views
         self.client.login(username="testuser", password="password123")
         users_resp = self.client.get(reverse("users"))
         self.assertRedirects(users_resp, reverse("dashboard"))
-        
+
         settings_resp = self.client.get(reverse("settings"))
         self.assertRedirects(settings_resp, reverse("dashboard"))
 
-        # Staff user granted access
         self.client.login(username="adminuser", password="password123")
         users_resp_admin = self.client.get(reverse("users"))
         self.assertEqual(users_resp_admin.status_code, 200)

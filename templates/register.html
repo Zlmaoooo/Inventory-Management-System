@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Invenza</title>
+    <title>Register | Invenza</title>
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,10 +20,10 @@
                     <i class="fa-solid fa-boxes-stacked brand-icon"></i>
                     <h1>INVENZA</h1>
                 </div>
-                <p class="login-subtitle">Sign in to your account</p>
+                <p class="login-subtitle">Create your account to get started</p>
             </div>
 
-            <form method="post" action="{% url 'login' %}" class="login-form">
+            <form method="post" action="{% url 'register' %}" class="login-form">
                 {% csrf_token %}
 
                 {% if error %}
@@ -34,10 +34,18 @@
                 {% endif %}
 
                 <div class="form-row">
-                    <label for="username">Username or Email</label>
+                    <label for="username">Username</label>
                     <div class="input-with-icon">
                         <i class="fa-solid fa-user"></i>
-                        <input type="text" id="username" name="username" placeholder="Enter username" required autofocus autocomplete="username">
+                        <input type="text" id="username" name="username" placeholder="Choose a username" value="{{ form_data.username|default:'' }}" required autofocus autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label for="email">Email Address</label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" name="email" placeholder="name@company.com" value="{{ form_data.email|default:'' }}" required autocomplete="email">
                     </div>
                 </div>
 
@@ -45,18 +53,26 @@
                     <label for="password">Password</label>
                     <div class="input-with-icon">
                         <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+                        <input type="password" id="password" name="password" placeholder="Create a password" required autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label for="confirm_password">Confirm Password</label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required autocomplete="new-password">
                     </div>
                 </div>
 
                 <button type="submit" class="primary-btn login-btn">
-                    <span>Sign In</span>
+                    <span>Create Account</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </form>
 
             <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 0.88rem; color: var(--text-muted);">
-                Don't have an account? <a href="{% url 'register' %}" style="color: var(--accent-color); font-weight: 600; text-decoration: underline;">Register here</a>
+                Already have an account? <a href="{% url 'login' %}" style="color: var(--accent-color); font-weight: 600; text-decoration: underline;">Log in here</a>
             </div>
         </div>
     </div>
