@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db import models
 from django.shortcuts import redirect, render
 
 from .forms import ProductForm
@@ -37,7 +38,22 @@ def logout_view(request):
 
 @login_required(login_url="login")
 def dashboard_view(request):
-    return render(request, "dashboard/dashboard.html")
+    products = Product.objects.all()
+    total_products = products.count()
+    low_stock_count = 0
+    total_value = 0
+    for p in products:
+        if p.quantity <= p.reorder_level:
+            low_stock_count += 1
+        total_value += (p.quantity * p.unit_price)
+
+    context = {
+        "total_products": total_products,
+        "low_stock_count": low_stock_count,
+        "total_value": total_value,
+        "recent_products": products[:5],
+    }
+    return render(request, "dashboard/dashboard.html", context)
 
 
 @login_required(login_url="login")
