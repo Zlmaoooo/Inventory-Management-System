@@ -1,0 +1,41 @@
+<div class="navbar-inner">
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search products, suppliers, transactions...">
+    </div>
+
+    <div class="navbar-actions">
+        <button type="button" class="icon-btn" aria-label="Notifications" title="Notifications">
+            <i class="fa-regular fa-bell"></i>
+        </button>
+
+        <div class="user-profile" aria-label="User profile">
+            <div class="avatar-placeholder">
+                {% if request.user.is_authenticated %}
+                    {{ request.user.username|slice:":1"|upper }}
+                {% else %}
+                    U
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <span class="user-name">
+                    {% if request.user.is_authenticated %}
+                        {{ request.user.username }}
+                    {% else %}
+                        Guest
+                    {% endif %}
+                </span>
+                <span class="user-role">
+                    {% if request.user.is_superuser or request.user.is_staff %}
+                        Admin
+                    {% else %}
+                        User
+                    {% endif %}
+                </span>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-btn" title="Sign Out">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</div>
