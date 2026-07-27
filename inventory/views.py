@@ -14,6 +14,10 @@ def root_redirect_view(request):
     return redirect("login")
 
 
+def custom_404_view(request, exception=None):
+    return render(request, "404.html", status=404)
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
