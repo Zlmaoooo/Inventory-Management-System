@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory | Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Inventory Management</h2>
+    <p>Add new stock products and manage active inventory records.</p>
+</div>
+
+<div class="products-grid">
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Add New Product</h3>
+        </div>
+        <form method="post" class="product-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-row">
+                <label for="{{ form.name.id_for_label }}">Product Name</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.sku.id_for_label }}">SKU (Stock Keeping Unit)</label>
+                <p class="field-help">Unique product identifier (e.g., PROD-001 or RICE-025).</p>
+                {{ form.sku }}
+                {{ form.sku.errors }}
+            </div>
+
+            <div class="form-row two-col">
+                <div>
+                    <label for="{{ form.quantity.id_for_label }}">Quantity</label>
+                    {{ form.quantity }}
+                    {{ form.quantity.errors }}
+                </div>
+                <div>
+                    <label for="{{ form.unit_price.id_for_label }}">Unit Price ($)</label>
+                    {{ form.unit_price }}
+                    {{ form.unit_price.errors }}
+                </div>
+            </div>
+
+            <div class="form-row two-col">
+                <div>
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                    {{ form.category.errors }}
+                </div>
+                <div>
+                    <label for="{{ form.reorder_level.id_for_label }}">Reorder Level</label>
+                    {{ form.reorder_level }}
+                    {{ form.reorder_level.errors }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
+
+            <button type="submit" class="primary-btn" style="margin-top: 6px;">
+                <i class="fa-solid fa-plus"></i>
+                <span>Save Product</span>
+            </button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Saved Inventory Items</h3>
+        </div>
+
+        {% if products %}
+            <div class="table-wrapper">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td><strong>{{ product.name }}</strong></td>
+                                <td><code>{{ product.sku }}</code></td>
+                                <td>{{ product.quantity }}</td>
+                                <td>${{ product.unit_price }}</td>
+                                <td>{{ product.category|default:'-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <i class="fa-solid fa-box-open empty-icon"></i>
+                <h4>No products added yet</h4>
+                <p>Use the form on the left to add your first inventory item.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

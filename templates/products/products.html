@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Products | Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Product Catalog</h2>
+    <p>Browse and search the read-only inventory catalog.</p>
+</div>
+
+<div class="products-grid single-panel">
+    <section class="panel">
+        {% if products %}
+            <div class="filter-search-box">
+                <div class="search-box" style="width: 100%; max-width: 400px;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="product-search" placeholder="Search catalog by product name or SKU...">
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="products-table" id="products-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>SKU</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td><strong>{{ product.name }}</strong></td>
+                                <td><code>{{ product.sku }}</code></td>
+                                <td>{{ product.quantity }}</td>
+                                <td>${{ product.unit_price }}</td>
+                                <td>{{ product.category|default:'-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="empty-state-card" id="products-empty" style="display: none;">
+                <i class="fa-solid fa-magnifying-glass empty-icon"></i>
+                <h4>No matching products found</h4>
+                <p>Try searching with a different keyword or SKU.</p>
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <i class="fa-solid fa-boxes-stacked empty-icon"></i>
+                <h4>No products added yet</h4>
+                <p>Add your first product from the <a href="{% url 'inventory' %}" style="color: var(--accent-color); font-weight: 600; underline;">Inventory page</a>.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+    (function () {
+        var searchInput = document.getElementById('product-search');
+        var table = document.getElementById('products-table');
+        var emptyMessage = document.getElementById('products-empty');
+
+        if (!searchInput || !table) {
+            return;
+        }
+
+        var rows = table.querySelectorAll('tbody tr');
+
+        searchInput.addEventListener('input', function () {
+            var query = searchInput.value.toLowerCase().trim();
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var name = row.children[0].textContent.toLowerCase();
+                var sku = row.children[1].textContent.toLowerCase();
+                var matches = name.indexOf(query) !== -1 || sku.indexOf(query) !== -1;
+
+                row.style.display = matches ? '' : 'none';
+
+                if (matches) {
+                    visibleCount += 1;
+                }
+            });
+
+            if (emptyMessage) {
+                emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        });
+    }());
+</script>
+{% endblock %}
