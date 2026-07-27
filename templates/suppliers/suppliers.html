@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Suppliers | Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Suppliers Directory</h2>
+    <p>Manage vendors, supply partners, and order contact details.</p>
+</div>
+
+<div class="products-grid single-panel">
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Registered Suppliers</h3>
+        </div>
+        <div class="empty-state-card">
+            <i class="fa-solid fa-truck-field empty-icon"></i>
+            <h4>No suppliers listed yet</h4>
+            <p>Vendor details and contact information will be stored here.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}

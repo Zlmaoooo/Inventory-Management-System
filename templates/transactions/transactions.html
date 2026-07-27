@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Transactions | Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Transactions History</h2>
+    <p>Track all incoming stock adjustments and outgoing inventory transfers.</p>
+</div>
+
+<div class="products-grid single-panel">
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Recent Activity</h3>
+        </div>
+        <div class="empty-state-card">
+            <i class="fa-solid fa-receipt empty-icon"></i>
+            <h4>No transactions recorded yet</h4>
+            <p>Stock adjustments and movement logs will appear here automatically.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
