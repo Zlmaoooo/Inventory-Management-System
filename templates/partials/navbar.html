@@ -16,29 +16,37 @@
         </button>
 
         <div class="user-profile" aria-label="User profile">
-            <div class="avatar-placeholder">
-                {% if request.user.is_authenticated %}
-                    {{ request.user.username|slice:":1"|upper }}
-                {% else %}
-                    U
-                {% endif %}
-            </div>
-            <div class="user-info">
-                <span class="user-name">
+            <a href="{% url 'profile' %}" class="user-profile-link" title="View profile" aria-label="View your profile">
+                <div class="avatar-placeholder">
                     {% if request.user.is_authenticated %}
-                        {{ request.user.username }}
+                        {{ request.user.username|slice:":1"|upper }}
                     {% else %}
-                        Guest
+                        U
                     {% endif %}
-                </span>
-                <span class="user-role">
-                    {% if request.user.is_superuser or request.user.is_staff %}
-                        Admin
-                    {% else %}
-                        User
-                    {% endif %}
-                </span>
-            </div>
+                </div>
+                <div class="user-info">
+                    <span class="user-name">
+                        {% if request.user.is_authenticated %}
+                            {{ request.user.username }}
+                        {% else %}
+                            Guest
+                        {% endif %}
+                    </span>
+                    <span class="user-role">
+                        {% if request.user.is_superuser or request.user.is_staff %}
+                            Admin
+                        {% else %}
+                            {% if request.user.is_authenticated %}
+                                {% with request.user.profile as profile %}
+                                    {% if profile.role == "owner" %}Owner{% else %}Worker{% endif %}
+                                {% endwith %}
+                            {% else %}
+                                User
+                            {% endif %}
+                        {% endif %}
+                    </span>
+                </div>
+            </a>
             <a href="{% url 'logout' %}" class="logout-btn" title="Sign Out">
                 <i class="fa-solid fa-right-from-bracket"></i>
             </a>
