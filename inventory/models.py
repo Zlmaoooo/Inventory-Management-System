@@ -68,10 +68,24 @@ class Supplier(models.Model):
 
 
 class Product(models.Model):
-    """A product/SKU tracked in inventory."""
+    """A product/SKU tracked in inventory.
 
+    Every product belongs to exactly one Shop — this is the core data-isolation
+    boundary. The shop FK is set automatically by the view (never exposed in
+    the UI form) so a user can only ever see and manage products belonging to
+    their own shop.
+    """
+
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.CASCADE,
+        related_name="products",
+        help_text="The shop this product belongs to. Set automatically from the logged-in user's profile.",
+    )
     name = models.CharField(max_length=120)
-    sku = models.CharField(max_length=50, unique=True)
+    # sku is unique *within* a shop, not globally — two shops may use the same
+    # SKU scheme independently.
+    sku = models.CharField(max_length=50)
     quantity = models.PositiveIntegerField(default=0)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.CharField(max_length=80, blank=True)
@@ -82,6 +96,8 @@ class Product(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        # Enforce SKU uniqueness per shop (not globally)
+        unique_together = [["shop", "sku"]]
 
     def __str__(self):
         return f"{self.name} ({self.sku})"
