@@ -4,11 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import models
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 
 from .forms import ProductForm
 from .models import Product
 
 
+@never_cache
 def landing_view(request):
     """Handles the root page, which IS the login experience.
 
@@ -26,13 +28,17 @@ def landing_view(request):
     if request.method == "POST":
         username_input = request.POST.get("username", "").strip()
         password_input = request.POST.get("password", "").strip()
-        user = authenticate(request, username=username_input, password=password_input)
+        user = User.objects.filter(
+            models.Q(username__iexact=username_input) | models.Q(email__iexact=username_input)
+        ).first()
+        if user is not None:
+            user = authenticate(request, username=user.username, password=password_input)
         if user is not None:
             login(request, user)
             next_url = request.GET.get("next", "dashboard")
             return redirect(next_url if next_url else "dashboard")
         else:
-            error = "Invalid username or password. Please try again."
+            error = "Invalid username or email or password. Please try again."
             form_data = {"username": username_input}
 
     return render(request, "landing.html", {"error": error, "form_data": form_data})
@@ -86,6 +92,7 @@ def register_view(request):
     return render(request, "register.html", context)
 
 
+@never_cache
 def login_view(request):
     """Redirects to the landing page, which now contains the login form.
 
