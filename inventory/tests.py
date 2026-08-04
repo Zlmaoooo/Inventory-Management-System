@@ -12,6 +12,27 @@ class RegistrationAndLandingViewsTests(TestCase):
         self.assertContains(response, "Streamline Your Inventory")
         self.assertContains(response, reverse("register"))
 
+    def test_landing_login_accepts_username_or_email(self):
+        user = User.objects.create_user(
+            username="emailuser",
+            email="emailuser@example.com",
+            password="password123",
+        )
+
+        username_response = self.client.post(
+            reverse("landing"),
+            {"username": user.username, "password": "password123"},
+        )
+        self.assertRedirects(username_response, reverse("dashboard"))
+
+        self.client.logout()
+
+        email_response = self.client.post(
+            reverse("landing"),
+            {"username": user.email, "password": "password123"},
+        )
+        self.assertRedirects(email_response, reverse("dashboard"))
+
     def test_successful_user_registration(self):
         response = self.client.post(
             reverse("register"),
