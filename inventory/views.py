@@ -213,7 +213,9 @@ def profile_edit_view(request):
 
 @shop_required
 def dashboard_view(request):
-    products = Product.objects.all()
+    # Only show products that belong to the logged-in user's own shop.
+    shop = request.user.profile.shop
+    products = Product.objects.filter(shop=shop)
     total_products = products.count()
     low_stock_count = 0
     total_value = 0
@@ -233,22 +235,32 @@ def dashboard_view(request):
 
 @shop_required
 def products_view(request):
-    products = Product.objects.all()
+    # Only show products that belong to the logged-in user's own shop.
+    shop = request.user.profile.shop
+    products = Product.objects.filter(shop=shop)
     return render(request, "products/products.html", {"products": products})
 
 
 @shop_required
 def inventory_view(request):
+    # All product operations are scoped to the logged-in user's shop.
+    shop = request.user.profile.shop
+
     if request.method == "POST":
         form = ProductForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Inject the shop before writing to the DB — the user never sees
+            # or selects a shop field; it's set automatically from their session.
+            product = form.save(commit=False)
+            product.shop = shop
+            product.save()
             messages.success(request, "Product saved successfully.")
             return redirect("inventory")
     else:
         form = ProductForm()
 
-    products = Product.objects.all()
+    # Only list products belonging to this shop.
+    products = Product.objects.filter(shop=shop)
     context = {
         "form": form,
         "products": products,
