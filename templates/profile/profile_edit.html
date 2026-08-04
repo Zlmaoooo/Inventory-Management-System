@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Shop — Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Edit Shop Details</h2>
+    <p>Update information about <strong>{{ shop.name }}</strong></p>
+</div>
+
+<div class="profile-edit-container">
+    <div class="panel profile-edit-card">
+        <div class="panel-header" style="margin-bottom:20px;">
+            <h3><i class="fa-solid fa-store" style="color:var(--accent-color);margin-right:8px;"></i>Shop Information</h3>
+            <a href="{% url 'profile' %}" class="profile-edit-cancel-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back
+            </a>
+        </div>
+
+        {% if form.errors %}
+        <div class="login-error-alert" style="margin-bottom:16px;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>Please fix the errors below and try again.</span>
+        </div>
+        {% endif %}
+
+        <form method="post" class="product-form" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row">
+                <label for="id_name">Shop Name <span style="color:#dc2626;">*</span></label>
+                <input type="text"
+                       id="id_name"
+                       name="name"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="e.g. Sunrise Grocery Store"
+                       required>
+                {% if form.name.errors %}
+                    <span class="form-errors">{{ form.name.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-row two-col">
+                <div>
+                    <label for="id_shop_type">Shop Type <span style="color:#dc2626;">*</span></label>
+                    <select id="id_shop_type" name="shop_type" required>
+                        {% for value, label in form.fields.shop_type.choices %}
+                            <option value="{{ value }}" {% if form.shop_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.shop_type.errors %}
+                        <span class="form-errors">{{ form.shop_type.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_contact_number">Contact Number <span style="color:#dc2626;">*</span></label>
+                    <input type="text"
+                           id="id_contact_number"
+                           name="contact_number"
+                           value="{{ form.contact_number.value|default:'' }}"
+                           placeholder="e.g. +254 700 123 456"
+                           required>
+                    {% if form.contact_number.errors %}
+                        <span class="form-errors">{{ form.contact_number.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="id_location">Location / Address <span style="color:#dc2626;">*</span></label>
+                <input type="text"
+                       id="id_location"
+                       name="location"
+                       value="{{ form.location.value|default:'' }}"
+                       placeholder="e.g. 12 Market Street, Nairobi"
+                       required>
+                {% if form.location.errors %}
+                    <span class="form-errors">{{ form.location.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <label for="id_description">Description <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+                <textarea id="id_description"
+                          name="description"
+                          rows="3"
+                          placeholder="Brief description of your shop (optional)">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                    <span class="form-errors">{{ form.description.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:4px;">
+                <button type="submit" class="primary-btn" id="save-shop-btn">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Save Changes
+                </button>
+                <a href="{% url 'profile' %}" class="profile-edit-cancel-btn profile-edit-cancel-btn--outlined">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.profile-edit-container {
+    max-width: 640px;
+}
+
+.profile-edit-card {
+    /* inherits .panel */
+}
+
+.profile-edit-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 7px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    transition: background-color 150ms ease, color 150ms ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.profile-edit-cancel-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.profile-edit-cancel-btn--outlined {
+    /* same as above — variant class for the inline cancel button */
+}
+
+/* Ensure select gets consistent styling in this form */
+.product-form select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    color: var(--text-primary);
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 36px;
+}
+
+.product-form select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+</style>
+{% endblock %}

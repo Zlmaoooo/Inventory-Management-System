@@ -1,0 +1,361 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Shop — Invenza</title>
+    <meta name="description" content="Set up your shop on Invenza to start managing your inventory.">
+
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        /* Onboarding-specific overrides — light theme, full-page centred layout */
+        .onboarding-body {
+            background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 60%, #e0f2fe 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+        }
+
+        .onboarding-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(15, 118, 110, 0.08), 0 2px 8px rgba(0,0,0,0.04);
+            width: 100%;
+            max-width: 520px;
+            padding: 40px 36px 36px;
+            animation: pageFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .onboarding-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .onboarding-brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent-border);
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            color: var(--accent-color);
+            font-size: 1.1rem;
+        }
+
+        .onboarding-brand-name {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--text-primary);
+        }
+
+        .onboarding-header {
+            margin-bottom: 28px;
+        }
+
+        .onboarding-step-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            background: var(--accent-light);
+            border: 1px solid var(--accent-border);
+            border-radius: 20px;
+            padding: 3px 10px;
+            margin-bottom: 10px;
+        }
+
+        .onboarding-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            margin-bottom: 6px;
+        }
+
+        .onboarding-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .onboarding-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .onboarding-form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .onboarding-form-row label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .onboarding-form-row .field-required {
+            color: #dc2626;
+            margin-left: 2px;
+        }
+
+        .onboarding-form-row input,
+        .onboarding-form-row select,
+        .onboarding-form-row textarea {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: var(--font-family);
+            background: #ffffff;
+            color: var(--text-primary);
+            transition: border-color 150ms ease, box-shadow 150ms ease;
+            outline: none;
+        }
+
+        .onboarding-form-row input:focus,
+        .onboarding-form-row select:focus,
+        .onboarding-form-row textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .onboarding-form-row textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .onboarding-form-row select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 36px;
+        }
+
+        .onboarding-error-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-md);
+            color: #dc2626;
+            padding: 12px 14px;
+            font-size: 0.85rem;
+        }
+
+        .onboarding-error-alert i {
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        .two-col-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .onboarding-submit-btn {
+            margin-top: 8px;
+            width: 100%;
+            padding: 12px 20px;
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: var(--font-family);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 150ms ease, transform 100ms ease, box-shadow 150ms ease;
+        }
+
+        .onboarding-submit-btn:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.2);
+        }
+
+        .onboarding-submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .onboarding-submit-btn i {
+            transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .onboarding-submit-btn:hover i {
+            transform: translateX(3px);
+        }
+
+        .onboarding-logout-note {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .onboarding-logout-note a {
+            color: var(--accent-color);
+            font-weight: 500;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .onboarding-logout-note a:hover {
+            color: var(--accent-hover);
+        }
+
+        @media (max-width: 560px) {
+            .onboarding-card {
+                padding: 28px 20px 24px;
+            }
+            .two-col-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="onboarding-body">
+    <div class="onboarding-card">
+
+        <!-- Brand -->
+        <div class="onboarding-brand">
+            <div class="onboarding-brand-icon">
+                <i class="fa-solid fa-store"></i>
+            </div>
+            <span class="onboarding-brand-name">INVENZA</span>
+        </div>
+
+        <!-- Header -->
+        <div class="onboarding-header">
+            <div class="onboarding-step-badge">
+                <i class="fa-solid fa-circle-check"></i>
+                Account created &mdash; Step 2 of 2
+            </div>
+            <h1 class="onboarding-title">Create Your Shop</h1>
+            <p class="onboarding-subtitle">
+                Tell us a bit about your business so we can set up your inventory workspace.
+            </p>
+        </div>
+
+        <!-- Error alert -->
+        {% if form.errors or error %}
+        <div class="onboarding-error-alert" style="margin-bottom: 16px;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>
+                {% if error %}
+                    {{ error }}
+                {% else %}
+                    Please fix the errors below and try again.
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form method="post" class="onboarding-form" novalidate>
+            {% csrf_token %}
+
+            <div class="onboarding-form-row">
+                <label for="id_name">Shop Name <span class="field-required">*</span></label>
+                <input type="text"
+                       id="id_name"
+                       name="name"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="e.g. Sunrise Grocery Store"
+                       required>
+                {% if form.name.errors %}
+                    <span style="font-size:0.78rem;color:#dc2626;">{{ form.name.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="two-col-row">
+                <div class="onboarding-form-row">
+                    <label for="id_shop_type">Shop Type <span class="field-required">*</span></label>
+                    <select id="id_shop_type" name="shop_type" required>
+                        <option value="" disabled {% if not form.shop_type.value %}selected{% endif %}>Select type…</option>
+                        {% for value, label in form.fields.shop_type.choices %}
+                            <option value="{{ value }}" {% if form.shop_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.shop_type.errors %}
+                        <span style="font-size:0.78rem;color:#dc2626;">{{ form.shop_type.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="onboarding-form-row">
+                    <label for="id_contact_number">Contact Number <span class="field-required">*</span></label>
+                    <input type="text"
+                           id="id_contact_number"
+                           name="contact_number"
+                           value="{{ form.contact_number.value|default:'' }}"
+                           placeholder="e.g. +254 700 123 456"
+                           required>
+                    {% if form.contact_number.errors %}
+                        <span style="font-size:0.78rem;color:#dc2626;">{{ form.contact_number.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="onboarding-form-row">
+                <label for="id_location">Location / Address <span class="field-required">*</span></label>
+                <input type="text"
+                       id="id_location"
+                       name="location"
+                       value="{{ form.location.value|default:'' }}"
+                       placeholder="e.g. 12 Market Street, Nairobi"
+                       required>
+                {% if form.location.errors %}
+                    <span style="font-size:0.78rem;color:#dc2626;">{{ form.location.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="onboarding-form-row">
+                <label for="id_description">Description <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                <textarea id="id_description"
+                          name="description"
+                          placeholder="Brief description of your shop (optional)">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                    <span style="font-size:0.78rem;color:#dc2626;">{{ form.description.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="onboarding-submit-btn" id="submit-shop-btn">
+                <i class="fa-solid fa-arrow-right"></i>
+                Create Shop &amp; Go to Dashboard
+            </button>
+        </form>
+
+        <p class="onboarding-logout-note">
+            Wrong account? <a href="{% url 'logout' %}">Sign out</a>
+        </p>
+    </div>
+</body>
+</html>

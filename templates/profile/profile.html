@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Profile — Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>My Profile</h2>
+    <p>Your account information and shop details</p>
+</div>
+
+<div class="profile-grid">
+    <!-- Account Card -->
+    <div class="panel profile-section-card">
+        <div class="panel-header">
+            <h3><i class="fa-solid fa-user" style="color:var(--accent-color);margin-right:8px;"></i>Account</h3>
+        </div>
+        <div class="profile-info-list">
+            <div class="profile-info-row">
+                <span class="profile-info-label">Username</span>
+                <span class="profile-info-value">{{ profile.user.username }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Email</span>
+                <span class="profile-info-value">{{ profile.user.email|default:"—" }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Role</span>
+                <span class="profile-role-badge profile-role-{{ profile.role }}">
+                    {% if profile.role == "owner" %}
+                        <i class="fa-solid fa-crown"></i>
+                    {% else %}
+                        <i class="fa-solid fa-user-gear"></i>
+                    {% endif %}
+                    {{ profile.get_role_display }}
+                </span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Member Since</span>
+                <span class="profile-info-value">{{ profile.user.date_joined|date:"N j, Y" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop Card -->
+    <div class="panel profile-section-card">
+        <div class="panel-header">
+            <h3><i class="fa-solid fa-store" style="color:var(--accent-color);margin-right:8px;"></i>Shop Details</h3>
+            <a href="{% url 'profile_edit' %}" class="primary-btn" style="font-size:0.82rem;padding:7px 14px;">
+                <i class="fa-solid fa-pen-to-square"></i>
+                Edit
+            </a>
+        </div>
+
+        {% if profile.shop %}
+        <div class="profile-info-list">
+            <div class="profile-info-row">
+                <span class="profile-info-label">Shop Name</span>
+                <span class="profile-info-value profile-info-value--strong">{{ profile.shop.name }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Type</span>
+                <span class="profile-shop-type-badge">{{ profile.shop.shop_type }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Location</span>
+                <span class="profile-info-value">
+                    <i class="fa-solid fa-location-dot" style="color:var(--text-muted);margin-right:5px;font-size:0.85rem;"></i>
+                    {{ profile.shop.location }}
+                </span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Contact</span>
+                <span class="profile-info-value">
+                    <i class="fa-solid fa-phone" style="color:var(--text-muted);margin-right:5px;font-size:0.85rem;"></i>
+                    {{ profile.shop.contact_number }}
+                </span>
+            </div>
+            {% if profile.shop.description %}
+            <div class="profile-info-row profile-info-row--description">
+                <span class="profile-info-label">Description</span>
+                <span class="profile-info-value profile-description-text">{{ profile.shop.description }}</span>
+            </div>
+            {% endif %}
+            <div class="profile-info-row">
+                <span class="profile-info-label">Shop Since</span>
+                <span class="profile-info-value">{{ profile.shop.created_at|date:"N j, Y" }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state-card">
+            <div class="empty-icon"><i class="fa-solid fa-store-slash"></i></div>
+            <h4>No shop linked</h4>
+            <p>Something went wrong. <a href="{% url 'shop_create' %}" style="color:var(--accent-color);font-weight:500;">Set up your shop</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.profile-section-card {
+    /* inherits .panel styles */
+}
+
+.profile-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.profile-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.profile-info-row--description {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-info-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    min-width: 110px;
+    flex-shrink: 0;
+    padding-top: 1px;
+}
+
+.profile-info-value {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.profile-info-value--strong {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.profile-description-text {
+    font-size: 0.87rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.profile-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.profile-role-owner {
+    background: var(--accent-light);
+    color: var(--accent-color);
+    border: 1px solid var(--accent-border);
+}
+
+.profile-role-worker {
+    background: var(--info-bg);
+    color: var(--info-text);
+}
+
+.profile-shop-type-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 4px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

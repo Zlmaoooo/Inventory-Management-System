@@ -1,3 +1,5 @@
+from functools import wraps
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -6,9 +8,41 @@ from django.db import models
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
-from .forms import ProductForm
-from .models import Product
+from .forms import ProductForm, ShopEditForm, ShopForm
+from .models import Product, Profile, Shop
 
+
+# ---------------------------------------------------------------------------
+# Decorator: shop_required
+# ---------------------------------------------------------------------------
+
+def shop_required(view_func):
+    """Guards authenticated-only views that also require a completed Shop/Profile.
+
+    If the user is not authenticated → redirect to the landing/login page.
+    If the user has no Profile, or has a Profile with shop=None → redirect to
+    the shop-creation flow so they complete onboarding before proceeding.
+
+    Applied to all protected views except shop_create_view (which must only
+    use @login_required to avoid a redirect loop).
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("landing")
+        try:
+            profile = request.user.profile
+            if profile.shop is None:
+                return redirect("shop_create")
+        except Profile.DoesNotExist:
+            return redirect("shop_create")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+# ---------------------------------------------------------------------------
+# Public / Auth views
+# ---------------------------------------------------------------------------
 
 @never_cache
 def landing_view(request):
@@ -57,7 +91,7 @@ def custom_404_view(request, exception=None):
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
-    
+
     error = None
     if request.method == "POST":
         username_input = request.POST.get("username", "").strip()
@@ -82,8 +116,9 @@ def register_view(request):
                 password=password_input
             )
             login(request, user)
-            messages.success(request, f"Welcome to Invenza, {user.username}! Your account has been created.")
-            return redirect("dashboard")
+            messages.success(request, f"Welcome to Invenza, {user.username}! Now let's set up your shop.")
+            # Redirect to shop onboarding — NOT dashboard (profile/shop not set up yet)
+            return redirect("shop_create")
 
     context = {
         "error": error,
@@ -110,7 +145,73 @@ def logout_view(request):
     return redirect("landing")
 
 
+# ---------------------------------------------------------------------------
+# Shop onboarding
+# ---------------------------------------------------------------------------
+
 @login_required(login_url="landing")
+def shop_create_view(request):
+    """Step 2 of registration: create the user's Shop and link their Profile.
+
+    Must NOT use @shop_required — that would cause an infinite redirect loop
+    for users who have no shop yet (which is exactly who this view serves).
+    """
+    # If the user already has a profile with a shop, send them to the dashboard
+    try:
+        profile = request.user.profile
+        if profile.shop is not None:
+            return redirect("dashboard")
+    except Profile.DoesNotExist:
+        pass
+
+    form = ShopForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            shop = form.save()
+            # Use update_or_create to safely handle any pre-existing Profile row
+            Profile.objects.update_or_create(
+                user=request.user,
+                defaults={"shop": shop, "role": "owner"},
+            )
+            messages.success(request, f"Your shop \"{shop.name}\" has been created. Welcome to your dashboard!")
+            return redirect("dashboard")
+
+    return render(request, "shop_onboarding.html", {"form": form})
+
+
+# ---------------------------------------------------------------------------
+# Profile
+# ---------------------------------------------------------------------------
+
+@shop_required
+def profile_view(request):
+    """Displays the logged-in user's profile and their shop details."""
+    profile = request.user.profile
+    return render(request, "profile/profile.html", {"profile": profile})
+
+
+@shop_required
+def profile_edit_view(request):
+    """Allows the user to update their shop's details."""
+    profile = request.user.profile
+    shop = profile.shop
+    form = ShopEditForm(request.POST or None, instance=shop)
+
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Shop details updated successfully.")
+            return redirect("profile")
+
+    return render(request, "profile/profile_edit.html", {"form": form, "shop": shop})
+
+
+# ---------------------------------------------------------------------------
+# App views (protected by @shop_required)
+# ---------------------------------------------------------------------------
+
+@shop_required
 def dashboard_view(request):
     products = Product.objects.all()
     total_products = products.count()
@@ -130,13 +231,13 @@ def dashboard_view(request):
     return render(request, "dashboard/dashboard.html", context)
 
 
-@login_required(login_url="landing")
+@shop_required
 def products_view(request):
     products = Product.objects.all()
     return render(request, "products/products.html", {"products": products})
 
 
-@login_required(login_url="landing")
+@shop_required
 def inventory_view(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -155,29 +256,29 @@ def inventory_view(request):
     return render(request, "inventory/inventory.html", context)
 
 
-@login_required(login_url="landing")
+@shop_required
 def transactions_view(request):
     return render(request, "transactions/transactions.html")
 
 
-@login_required(login_url="landing")
+@shop_required
 def suppliers_view(request):
     return render(request, "suppliers/suppliers.html")
 
 
-@login_required(login_url="landing")
+@shop_required
 def reports_view(request):
     return render(request, "reports/reports.html")
 
 
-@login_required(login_url="landing")
+@shop_required
 def users_view(request):
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect("dashboard")
     return render(request, "users/users.html")
 
 
-@login_required(login_url="landing")
+@shop_required
 def settings_view(request):
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect("dashboard")
