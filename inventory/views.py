@@ -10,9 +10,32 @@ from .models import Product
 
 
 def landing_view(request):
+    """Handles the root page, which IS the login experience.
+
+    GET  → render the landing page with the embedded login form.
+    POST → authenticate the submitted credentials.
+
+    There is no separate public login page; /login/ redirects here.
+    """
     if request.user.is_authenticated:
         return redirect("dashboard")
-    return render(request, "landing.html")
+
+    error = None
+    form_data = {}
+
+    if request.method == "POST":
+        username_input = request.POST.get("username", "").strip()
+        password_input = request.POST.get("password", "").strip()
+        user = authenticate(request, username=username_input, password=password_input)
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get("next", "dashboard")
+            return redirect(next_url if next_url else "dashboard")
+        else:
+            error = "Invalid username or password. Please try again."
+            form_data = {"username": username_input}
+
+    return render(request, "landing.html", {"error": error, "form_data": form_data})
 
 
 def root_redirect_view(request):
@@ -64,20 +87,15 @@ def register_view(request):
 
 
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-    error = None
-    if request.method == "POST":
-        username_input = request.POST.get("username", "").strip()
-        password_input = request.POST.get("password", "").strip()
-        user = authenticate(request, username=username_input, password=password_input)
-        if user is not None:
-            login(request, user)
-            next_url = request.GET.get("next", "dashboard")
-            return redirect(next_url if next_url else "dashboard")
-        else:
-            error = "Invalid username or password. Please try again."
-    return render(request, "login.html", {"error": error})
+    """Redirects to the landing page, which now contains the login form.
+
+    Kept so that existing links (e.g. @login_required redirects) resolve
+    cleanly.  Any ?next= parameter is forwarded so the post-login redirect
+    still works correctly.
+    """
+    next_url = request.GET.get("next", "")
+    target = f"/?next={next_url}" if next_url else "/"
+    return redirect(target)
 
 
 def logout_view(request):
@@ -85,7 +103,7 @@ def logout_view(request):
     return redirect("landing")
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def dashboard_view(request):
     products = Product.objects.all()
     total_products = products.count()
@@ -105,13 +123,13 @@ def dashboard_view(request):
     return render(request, "dashboard/dashboard.html", context)
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def products_view(request):
     products = Product.objects.all()
     return render(request, "products/products.html", {"products": products})
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def inventory_view(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -130,29 +148,29 @@ def inventory_view(request):
     return render(request, "inventory/inventory.html", context)
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def transactions_view(request):
     return render(request, "transactions/transactions.html")
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def suppliers_view(request):
     return render(request, "suppliers/suppliers.html")
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def reports_view(request):
     return render(request, "reports/reports.html")
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def users_view(request):
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect("dashboard")
     return render(request, "users/users.html")
 
 
-@login_required(login_url="login")
+@login_required(login_url="landing")
 def settings_view(request):
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect("dashboard")

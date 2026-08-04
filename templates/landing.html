@@ -4,85 +4,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invenza | Modern Inventory Management System</title>
+    <title>Invenza — Internal Inventory Management</title>
+    <meta name="description" content="Invenza is an internal business tool for managing store inventory, product catalogs, and stock levels.">
 
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 </head>
-<body class="login-body" style="display: block; min-height: 100vh;">
+<body>
 
-    <!-- Landing Navigation Header -->
-    <header style="background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;">
-        <div class="login-brand" style="justify-content: start;">
-            <i class="fa-solid fa-boxes-stacked brand-icon"></i>
-            <h1 style="font-size: 1.25rem;">INVENZA</h1>
+    <!-- TOP CHROME — Wordmark only -->
+    <header class="lp-header">
+        <div class="lp-wordmark">
+            <i class="fa-solid fa-boxes-stacked lp-wordmark-icon"></i>
+            <span class="lp-wordmark-text">INVENZA</span>
         </div>
-
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <a href="{% url 'login' %}" class="icon-btn" style="width: auto; padding: 8px 16px; font-weight: 500; font-size: 0.88rem;" title="Sign In">
-                <i class="fa-solid fa-right-to-bracket" style="margin-right: 6px;"></i> Log In
-            </a>
-            <a href="{% url 'register' %}" class="primary-btn" style="padding: 8px 16px; font-size: 0.88rem;">
-                <i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> Register
-            </a>
+        <div class="lp-header-meta">
+            <span class="lp-system-badge">
+                <span class="lp-status-dot"></span>
+                Systems operational
+            </span>
         </div>
     </header>
 
-    <!-- Landing Hero Section -->
-    <main style="max-width: 900px; margin: 60px auto; padding: 0 24px; text-align: center;">
-        <div style="display: inline-flex; align-items: center; gap: 8px; background-color: var(--accent-light); border: 1px solid var(--accent-border); color: var(--accent-color); padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; margin-bottom: 20px;">
-            <i class="fa-solid fa-sparkles"></i> Simple • Restrained • Fast
-        </div>
+    <!-- SPLIT LAYOUT -->
+    <main class="lp-split">
 
-        <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 16px;">
-            Streamline Your Inventory & Stock Management
-        </h1>
+        <!-- LEFT — Signature element + headline -->
+        <section class="lp-left" aria-label="Product overview">
 
-        <p style="font-size: 1.1rem; color: var(--text-secondary); max-width: 640px; margin: 0 auto 32px auto; line-height: 1.6;">
-            Invenza helps businesses monitor product catalogs, track stock levels, manage suppliers, and view valuation metrics with ease.
-        </p>
-
-        <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-            <a href="{% url 'register' %}" class="primary-btn" style="padding: 12px 28px; font-size: 1rem;">
-                <span>Get Started — Register Free</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </a>
-            <a href="{% url 'login' %}" class="icon-btn" style="width: auto; padding: 12px 24px; font-size: 0.95rem; font-weight: 500;">
-                <span>Existing User? Log In</span>
-            </a>
-        </div>
-
-        <!-- Features Showcase Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 60px; text-align: left;">
-            <div class="panel" style="padding: 24px;">
-                <div class="metric-icon teal" style="margin-bottom: 16px;">
-                    <i class="fa-solid fa-boxes-stacked"></i>
-                </div>
-                <h3 style="font-size: 1rem; margin-bottom: 6px;">Catalog Control</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">Organize products with SKUs, categories, quantities, unit prices, and custom reorder alerts.</p>
+            <div class="lp-headline-block">
+                <h1 class="lp-headline">Inventory<br><em>under control.</em></h1>
+                <p class="lp-description">
+                    Invenza is the internal operations tool for your team — manage
+                    product catalogs, track stock levels, and monitor valuation in real time.
+                </p>
             </div>
 
-            <div class="panel" style="padding: 24px;">
-                <div class="metric-icon blue" style="margin-bottom: 16px;">
-                    <i class="fa-solid fa-chart-line"></i>
+            <!-- Signature element: animated inventory ticker table -->
+            <div class="lp-ticker-shell" aria-hidden="true">
+                <div class="lp-ticker-header">
+                    <div class="lp-ticker-title">
+                        <span class="lp-live-dot"></span>
+                        <span>Live Stock Monitor</span>
+                    </div>
+                    <div class="lp-ticker-cols">
+                        <span>SKU</span>
+                        <span>Product</span>
+                        <span>Qty</span>
+                        <span>Unit Price</span>
+                        <span>Status</span>
+                    </div>
                 </div>
-                <h3 style="font-size: 1rem; margin-bottom: 6px;">Real-Time Dashboard</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">Get instant overview calculations of total stock value, low-inventory warnings, and recent activity.</p>
+                <div class="lp-ticker-body" id="tickerBody">
+                    <!-- Rows injected by JS -->
+                </div>
             </div>
 
-            <div class="panel" style="padding: 24px;">
-                <div class="metric-icon green" style="margin-bottom: 16px;">
-                    <i class="fa-solid fa-shield-halved"></i>
+        </section>
+
+        <!-- RIGHT — Login card -->
+        <section class="lp-right" aria-label="Employee login">
+            <div class="lp-login-card">
+
+                <div class="lp-card-header">
+                    <h2 class="lp-card-title">Employee Sign-In</h2>
+                    <p class="lp-card-sub">Access is restricted to authorised staff.</p>
                 </div>
-                <h3 style="font-size: 1rem; margin-bottom: 6px;">Role Access Control</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">Secure admin access for managing system users and settings while maintaining catalog visibility for staff.</p>
+
+                <form method="post" action="{% url 'landing' %}" class="lp-form" novalidate>
+                    {% csrf_token %}
+
+                    {% if error %}
+                    <div class="lp-error-alert" role="alert">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>{{ error }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="lp-field">
+                        <label class="lp-label" for="username">Username</label>
+                        <div class="lp-input-wrap">
+                            <i class="fa-regular fa-user lp-input-icon"></i>
+                            <input
+                                class="lp-input"
+                                type="text"
+                                id="username"
+                                name="username"
+                                placeholder="your.username"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                value="{{ form_data.username|default:'' }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="lp-field">
+                        <label class="lp-label" for="password">Password</label>
+                        <div class="lp-input-wrap">
+                            <i class="fa-solid fa-lock lp-input-icon"></i>
+                            <input
+                                class="lp-input"
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                                required
+                                autocomplete="current-password"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="lp-submit-btn" id="loginBtn">
+                        <span>Log In</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <p class="lp-admin-note">
+                    <i class="fa-regular fa-circle-question"></i>
+                    No account? Contact your system administrator.
+                </p>
+
             </div>
-        </div>
+        </section>
+
     </main>
 
+    <!-- FOOTER -->
+    <footer class="lp-footer">
+        <span>&copy; 2025 Invenza &mdash; Internal Use Only</span>
+    </footer>
+
+    <script src="{% static 'js/landing.js' %}"></script>
 </body>
 </html>
