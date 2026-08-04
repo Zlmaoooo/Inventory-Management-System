@@ -1,9 +1,11 @@
 from django import forms
 
-from .models import Product, Shop
+from .models import Product, Shop, Supplier, Transaction
 
 
 class ProductForm(forms.ModelForm):
+    """Add a new product to the catalog."""
+
     class Meta:
         model = Product
         fields = [
@@ -18,6 +20,90 @@ class ProductForm(forms.ModelForm):
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class ProductEditForm(forms.ModelForm):
+    """Edit an existing product (same fields, separate form for clarity)."""
+
+    class Meta:
+        model = Product
+        fields = [
+            "name",
+            "sku",
+            "quantity",
+            "unit_price",
+            "category",
+            "reorder_level",
+            "description",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class SupplierForm(forms.ModelForm):
+    """Add or edit a supplier."""
+
+    class Meta:
+        model = Supplier
+        fields = ["name", "contact_email", "phone", "address"]
+        widgets = {
+            "address": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {
+            "name": "Supplier Name",
+            "contact_email": "Contact Email",
+            "phone": "Phone Number",
+            "address": "Address",
+        }
+
+
+class TransactionInForm(forms.Form):
+    """Stock-In form: move stock into inventory."""
+
+    product = forms.ModelChoiceField(
+        queryset=Product.objects.all(),
+        empty_label="Select a product…",
+        label="Product",
+    )
+    quantity = forms.IntegerField(min_value=1, label="Quantity to Add")
+    supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(),
+        required=False,
+        empty_label="No supplier (optional)…",
+        label="Supplier",
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2, "placeholder": "Optional notes…"}),
+        label="Notes",
+    )
+
+
+class TransactionOutForm(forms.Form):
+    """Stock-Out form: remove stock from inventory."""
+
+    product = forms.ModelChoiceField(
+        queryset=Product.objects.all(),
+        empty_label="Select a product…",
+        label="Product",
+    )
+    quantity = forms.IntegerField(min_value=1, label="Quantity to Remove")
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2, "placeholder": "Optional notes…"}),
+        label="Notes",
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        product = cleaned.get("product")
+        qty = cleaned.get("quantity")
+        if product and qty and qty > product.quantity:
+            raise forms.ValidationError(
+                f"Cannot remove {qty} units — only {product.quantity} in stock."
+            )
+        return cleaned
 
 
 class ShopForm(forms.ModelForm):
@@ -46,7 +132,7 @@ class ShopEditForm(forms.ModelForm):
 
     class Meta:
         model = Shop
-        fields = ["name", "shop_type", "location", "contact_number", "description"]
+        fields = ["name", "shop_type", "location", "contact_number", "description", "currency_symbol"]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
         }
@@ -56,4 +142,5 @@ class ShopEditForm(forms.ModelForm):
             "location": "Location / Address",
             "contact_number": "Contact Number",
             "description": "Description",
+            "currency_symbol": "Currency Symbol",
         }
