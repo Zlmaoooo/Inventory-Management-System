@@ -8,7 +8,7 @@
      --lp-edge:     #1F2430   borders, dividers
      --lp-text:     #E8EAF0   primary text
      --lp-muted:    #8B93A1   secondary / muted text  (lightened for WCAG)
-     --lp-amber:    #D97706   accent — status, CTA, alerts
+     --lp-teal:     #2DD4BF   accent — status, CTA, alerts (teal, matches app family)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
@@ -29,9 +29,9 @@
     --lp-edge2:    #2A3040;
     --lp-text:     #E8EAF0;
     --lp-muted:    #8B93A1;
-    --lp-amber:    #D97706;
-    --lp-amber-dim:#92400E;
-    --lp-amber-bg: rgba(217, 119, 6, 0.08);
+    --lp-teal:     #2DD4BF;
+    --lp-teal-dim: #0D9488;
+    --lp-teal-bg:  rgba(45, 212, 191, 0.08);
     --lp-danger:   #EF4444;
     --lp-danger-bg:rgba(239, 68, 68, 0.10);
 
@@ -77,7 +77,7 @@ button, input { font-family: inherit; font-size: inherit; }
 }
 
 .lp-wordmark-icon {
-    color: var(--lp-amber);
+    color: var(--lp-teal);
     font-size: 1.15rem;
 }
 
@@ -165,7 +165,7 @@ button, input { font-family: inherit; font-size: inherit; }
 
 .lp-headline em {
     font-style: italic;
-    color: var(--lp-amber);
+    color: var(--lp-teal);
 }
 
 .lp-description {
@@ -211,20 +211,20 @@ button, input { font-family: inherit; font-size: inherit; }
     margin-bottom: 10px;
 }
 
-/* Amber pulsing live dot inside ticker */
+/* Teal pulsing live dot inside ticker */
 .lp-live-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background-color: var(--lp-amber);
+    background-color: var(--lp-teal);
     display: inline-block;
-    animation: amberPulse 1.8s ease-in-out infinite;
+    animation: tealPulse 1.8s ease-in-out infinite;
     flex-shrink: 0;
 }
 
-@keyframes amberPulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.5); }
-    50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(217, 119, 6, 0); }
+@keyframes tealPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.5); }
+    50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(45, 212, 191, 0); }
 }
 
 /* Column headers inside ticker */
@@ -272,21 +272,21 @@ button, input { font-family: inherit; font-size: inherit; }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Amber flash for low-stock rows */
+/* Teal flash for low-stock rows */
 .lp-ticker-row.row-alert {
-    background-color: var(--lp-amber-bg);
-    animation: amberFlash 600ms ease both;
+    background-color: var(--lp-teal-bg);
+    animation: tealFlash 600ms ease both;
 }
 
-@keyframes amberFlash {
-    0%   { background-color: rgba(217, 119, 6, 0.22); }
-    100% { background-color: rgba(217, 119, 6, 0.08); }
+@keyframes tealFlash {
+    0%   { background-color: rgba(45, 212, 191, 0.22); }
+    100% { background-color: rgba(45, 212, 191, 0.08); }
 }
 
 .lp-ticker-row .col-sku  { color: var(--lp-muted); font-size: 0.72rem; }
 .lp-ticker-row .col-name { color: var(--lp-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.76rem; }
 .lp-ticker-row .col-qty  { color: var(--lp-text); }
-.lp-ticker-row .col-qty.low { color: var(--lp-amber); font-weight: 500; }
+.lp-ticker-row .col-qty.low { color: var(--lp-teal); font-weight: 500; }
 .lp-ticker-row .col-price { color: var(--lp-text); }
 
 /* Status badge inside row */
@@ -398,13 +398,13 @@ button, input { font-family: inherit; font-size: inherit; }
 }
 
 .lp-input:focus {
-    border-color: var(--lp-amber);
-    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+    border-color: var(--lp-teal);
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
 }
 
 .lp-input:focus + .lp-input-icon,
 .lp-input-wrap:focus-within .lp-input-icon {
-    color: var(--lp-amber);
+    color: var(--lp-teal);
 }
 
 /* Error alert */
@@ -430,7 +430,7 @@ button, input { font-family: inherit; font-size: inherit; }
     justify-content: center;
     gap: 9px;
     width: 100%;
-    background-color: var(--lp-amber);
+    background-color: var(--lp-teal);
     color: #0C0E12;
     border: none;
     border-radius: var(--lp-radius);
@@ -444,8 +444,8 @@ button, input { font-family: inherit; font-size: inherit; }
 }
 
 .lp-submit-btn:hover {
-    background-color: #B45309;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.25);
+    background-color: var(--lp-teal-dim);
+    box-shadow: 0 4px 16px rgba(45, 212, 191, 0.25);
 }
 
 .lp-submit-btn:active {
