@@ -23,14 +23,25 @@ class SupplierAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "sku", "quantity", "unit_price", "category", "reorder_level", "created_at")
+    list_display = ("name", "sku", "current_stock", "unit_price", "category", "reorder_level", "shop", "created_at")
     search_fields = ("name", "sku", "category")
-    list_filter = ("category",)
+    list_filter = ("category", "shop")
+    # current_stock must NEVER be hand-edited in the admin — it is the
+    # exclusive responsibility of the Transaction post_save signal.
+    # Listing it in readonly_fields means it is visible for inspection
+    # but cannot be modified through the admin panel.
+    readonly_fields = ("current_stock", "created_at", "updated_at")
 
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("product", "type", "quantity", "supplier", "created_by", "timestamp")
-    list_filter = ("type",)
+    list_display = ("product", "shop", "type", "quantity", "supplier", "created_by", "timestamp")
+    list_filter = ("type", "shop")
     search_fields = ("product__name", "product__sku")
-    readonly_fields = ("timestamp",)
+    # Transactions are immutable — all fields are read-only after creation.
+    # The admin can view history but cannot alter any transaction record.
+    readonly_fields = ("product", "shop", "type", "quantity", "notes", "supplier", "created_by", "timestamp")
+
+    def has_change_permission(self, request, obj=None):
+        """Prevent any edits to existing Transaction records through the admin."""
+        return False
