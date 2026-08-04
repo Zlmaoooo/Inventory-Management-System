@@ -4,12 +4,12 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, transaction as db_transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
-from .forms import ProductForm, ShopEditForm, ShopForm
-from .models import Product, Profile, Shop
+from .forms import ProductForm, ShopEditForm, ShopForm, StockInForm, StockOutForm
+from .models import Product, Profile, Shop, Transaction
 
 
 # ---------------------------------------------------------------------------
@@ -220,9 +220,9 @@ def dashboard_view(request):
     low_stock_count = 0
     total_value = 0
     for p in products:
-        if p.quantity <= p.reorder_level:
+        if p.current_stock <= p.reorder_level:
             low_stock_count += 1
-        total_value += (p.quantity * p.unit_price)
+        total_value += (p.current_stock * p.unit_price)
 
     context = {
         "total_products": total_products,
@@ -243,26 +243,86 @@ def products_view(request):
 
 @shop_required
 def inventory_view(request):
-    # All product operations are scoped to the logged-in user's shop.
+    """Inventory management page — two separate actions on one page.
+
+    action=add_product:
+        Creates a new Product with current_stock=0. The shop is injected
+        automatically from the session — never taken from form data.
+
+    action=record_movement:
+        Creates a Transaction (IN or OUT) and updates the product's
+        current_stock atomically via the post_save signal.
+        The whole sequence runs inside db_transaction.atomic() so that if
+        anything fails partway through, neither the Transaction row nor
+        the stock change is persisted.
+    """
     shop = request.user.profile.shop
 
-    if request.method == "POST":
-        form = ProductForm(request.POST)
-        if form.is_valid():
-            # Inject the shop before writing to the DB — the user never sees
-            # or selects a shop field; it's set automatically from their session.
-            product = form.save(commit=False)
-            product.shop = shop
-            product.save()
-            messages.success(request, "Product saved successfully.")
-            return redirect("inventory")
-    else:
-        form = ProductForm()
+    # Initialise both forms (GET state)
+    form_product = ProductForm()
+    form_stock_in = StockInForm(shop=shop)
+    form_stock_out = StockOutForm(shop=shop)
+    active_form = None   # used by the template to re-open the right panel on error
 
-    # Only list products belonging to this shop.
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # --- Add New Product ---
+        if action == "add_product":
+            form_product = ProductForm(request.POST)
+            if form_product.is_valid():
+                product = form_product.save(commit=False)
+                product.shop = shop
+                # current_stock defaults to 0 — never set from POST data
+                product.save()
+                messages.success(request, f"Product \"{product.name}\" added. Record a Stock-In to set initial stock.")
+                return redirect("inventory")
+            active_form = "add_product"
+
+        # --- Record Stock Movement ---
+        elif action in ("stock_in", "stock_out"):
+            txn_type = "IN" if action == "stock_in" else "OUT"
+            FormClass = StockInForm if txn_type == "IN" else StockOutForm
+            form = FormClass(request.POST, shop=shop)
+
+            if txn_type == "IN":
+                form_stock_in = form
+            else:
+                form_stock_out = form
+
+            if form.is_valid():
+                product = form.cleaned_data["product"]
+                qty = form.cleaned_data["quantity"]
+                notes = form.cleaned_data.get("notes", "")
+
+                # Wrap Transaction creation + signal-triggered stock update in
+                # a single atomic block — if anything fails, both roll back
+                # together and no partial state is persisted.
+                with db_transaction.atomic():
+                    Transaction.objects.create(
+                        product=product,
+                        shop=shop,
+                        type=txn_type,
+                        quantity=qty,
+                        notes=notes,
+                        created_by=request.user,
+                    )
+                    # The post_save signal fires inside this atomic block and
+                    # updates Product.current_stock with F() — also rolled back
+                    # if an exception occurs after this point.
+
+                direction = "added to" if txn_type == "IN" else "removed from"
+                messages.success(request, f"{qty} unit(s) {direction} \"{product.name}\" stock.")
+                return redirect("inventory")
+
+            active_form = action
+
     products = Product.objects.filter(shop=shop)
     context = {
-        "form": form,
+        "form_product": form_product,
+        "form_stock_in": form_stock_in,
+        "form_stock_out": form_stock_out,
+        "active_form": active_form,
         "products": products,
     }
     return render(request, "inventory/inventory.html", context)
@@ -270,7 +330,36 @@ def inventory_view(request):
 
 @shop_required
 def transactions_view(request):
-    return render(request, "transactions/transactions.html")
+    """Shop-scoped transaction history, optionally filtered by product.
+
+    GET ?product=<id> filters the table to a single product. The product
+    dropdown in the filter bar is also shop-scoped so users cannot enumerate
+    other shops' products via the query string.
+    """
+    shop = request.user.profile.shop
+
+    # Only expose products belonging to this shop in the filter dropdown
+    products = Product.objects.filter(shop=shop)
+
+    # Parse optional product filter from GET params
+    selected_product_id = request.GET.get("product", "")
+    transactions = Transaction.objects.filter(shop=shop).select_related(
+        "product", "created_by"
+    )
+    if selected_product_id:
+        # Validate the product belongs to this shop before filtering —
+        # prevents using the query param to probe another shop's transactions.
+        if products.filter(pk=selected_product_id).exists():
+            transactions = transactions.filter(product_id=selected_product_id)
+        else:
+            selected_product_id = ""  # reset invalid/cross-shop param
+
+    context = {
+        "transactions": transactions,
+        "products": products,
+        "selected_product_id": selected_product_id,
+    }
+    return render(request, "transactions/transactions.html", context)
 
 
 @shop_required
