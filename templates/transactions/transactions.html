@@ -4,20 +4,83 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>Transactions History</h2>
-    <p>Track all incoming stock adjustments and outgoing inventory transfers.</p>
+    <h2>Transaction History</h2>
+    <p>Complete audit trail of every stock movement for your shop — newest first.</p>
 </div>
 
 <div class="products-grid single-panel">
     <section class="panel">
+
+        {# ---- Filter bar ---- #}
         <div class="panel-header">
-            <h3>Recent Activity</h3>
+            <h3><i class="fa-solid fa-receipt"></i> Stock Movements</h3>
+            <form method="get" class="filter-form" id="txn-filter-form">
+                <select name="product" id="txn-product-filter" class="filter-select"
+                        onchange="document.getElementById('txn-filter-form').submit()">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                        <option value="{{ product.pk }}"
+                                {% if selected_product_id == product.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ product.name }} ({{ product.sku }})
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if selected_product_id %}
+                    <a href="{% url 'transactions' %}" class="clear-filter-link">
+                        <i class="fa-solid fa-xmark"></i> Clear filter
+                    </a>
+                {% endif %}
+            </form>
         </div>
-        <div class="empty-state-card">
-            <i class="fa-solid fa-receipt empty-icon"></i>
-            <h4>No transactions recorded yet</h4>
-            <p>Stock adjustments and movement logs will appear here automatically.</p>
-        </div>
+
+        {% if transactions %}
+            <div class="table-wrapper">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Notes</th>
+                            <th>Recorded By</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for txn in transactions %}
+                            <tr>
+                                <td><strong>{{ txn.product.name }}</strong></td>
+                                <td><code>{{ txn.product.sku }}</code></td>
+                                <td>
+                                    <span class="txn-badge txn-badge--{{ txn.type|lower }}">
+                                        {% if txn.type == 'IN' %}
+                                            <i class="fa-solid fa-arrow-down"></i> Stock In
+                                        {% else %}
+                                            <i class="fa-solid fa-arrow-up"></i> Stock Out
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ txn.quantity }}</td>
+                                <td class="txn-notes">{{ txn.notes|default:"—" }}</td>
+                                <td>{{ txn.created_by.username|default:"—" }}</td>
+                                <td class="txn-timestamp">{{ txn.timestamp|date:"d M Y, H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <i class="fa-solid fa-receipt empty-icon"></i>
+                <h4>No transactions recorded yet</h4>
+                <p>
+                    Stock movements will appear here automatically once you record them from the
+                    <a href="{% url 'inventory' %}" style="color: var(--accent-color); font-weight: 600;">Inventory page</a>.
+                </p>
+            </div>
+        {% endif %}
+
     </section>
 </div>
 {% endblock %}

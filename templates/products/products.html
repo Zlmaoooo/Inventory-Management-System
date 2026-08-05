@@ -24,7 +24,7 @@
                         <tr>
                             <th>Product Name</th>
                             <th>SKU</th>
-                            <th>Quantity</th>
+                            <th>Current Stock</th>
                             <th>Unit Price</th>
                             <th>Category</th>
                         </tr>
@@ -34,7 +34,7 @@
                             <tr>
                                 <td><strong>{{ product.name }}</strong></td>
                                 <td><code>{{ product.sku }}</code></td>
-                                <td>{{ product.quantity }}</td>
+                                <td>{{ product.current_stock }}</td>
                                 <td>${{ product.unit_price }}</td>
                                 <td>{{ product.category|default:'-' }}</td>
                             </tr>

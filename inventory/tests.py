@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Product, Profile, Shop
+from .models import Product, Profile, Shop, Transaction
 
 
 # ---------------------------------------------------------------------------
@@ -21,6 +21,18 @@ def _make_shop_user(username, shop_name, password="password123"):
     )
     Profile.objects.create(user=user, shop=shop, role="owner")
     return user, shop
+
+
+def _make_product(shop, name="Test Product", sku="TEST-001"):
+    """Create a Product belonging to the given shop with current_stock=0."""
+    return Product.objects.create(
+        shop=shop,
+        name=name,
+        sku=sku,
+        unit_price="10.00",
+        category="Test",
+        reorder_level=5,
+    )
 
 
 class RegistrationAndLandingViewsTests(TestCase):
@@ -116,17 +128,8 @@ class InventoryAndProductsViewsTests(TestCase):
 
     def test_inventory_page_shows_form_and_saved_products(self):
         self.client.login(username="testuser", password="password123")
-        # Product must belong to a shop now — use the test user's shop.
-        Product.objects.create(
-            shop=self.shop,
-            name="Rice",
-            sku="RICE-001",
-            quantity=10,
-            unit_price="25.00",
-            category="Grains",
-            reorder_level=5,
-            description="Test product",
-        )
+        # Products now start at current_stock=0 (no quantity field on creation).
+        product = _make_product(self.shop, name="Rice", sku="RICE-001")
 
         response = self.client.get(reverse("inventory"))
 
@@ -137,16 +140,7 @@ class InventoryAndProductsViewsTests(TestCase):
 
     def test_products_page_shows_catalog(self):
         self.client.login(username="testuser", password="password123")
-        Product.objects.create(
-            shop=self.shop,
-            name="Beans",
-            sku="BEAN-001",
-            quantity=8,
-            unit_price="12.50",
-            category="Grains",
-            reorder_level=3,
-            description="Test product",
-        )
+        _make_product(self.shop, name="Beans", sku="BEAN-001")
 
         response = self.client.get(reverse("products"))
 
@@ -159,9 +153,9 @@ class InventoryAndProductsViewsTests(TestCase):
         response = self.client.post(
             reverse("inventory"),
             {
+                "action": "add_product",
                 "name": "Sugar",
                 "sku": "SUG-001",
-                "quantity": 4,
                 "unit_price": "18.00",
                 "category": "Groceries",
                 "reorder_level": 2,
@@ -171,6 +165,8 @@ class InventoryAndProductsViewsTests(TestCase):
 
         self.assertRedirects(response, reverse("inventory"))
         self.assertTrue(Product.objects.filter(sku="SUG-001").exists())
+        # New product must start at current_stock=0
+        self.assertEqual(Product.objects.get(sku="SUG-001").current_stock, 0)
 
         products_response = self.client.get(reverse("products"))
         self.assertContains(products_response, "SUG-001")
@@ -213,9 +209,9 @@ class ProductShopIsolationTests(TestCase):
         post_resp = self.client.post(
             reverse("inventory"),
             {
+                "action": "add_product",
                 "name": "AlphaWidget",
                 "sku": "AW-001",
-                "quantity": 50,
                 "unit_price": "9.99",
                 "category": "Widgets",
                 "reorder_level": 10,
@@ -263,4 +259,127 @@ class ProductShopIsolationTests(TestCase):
         self.assertNotContains(
             inventory_resp, "AlphaWidget",
             msg_prefix="Shop B's inventory page must not contain Shop A's product name.",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Transaction system tests
+# ---------------------------------------------------------------------------
+
+class TransactionSystemTests(TestCase):
+    """Tests for the full stock-transaction lifecycle.
+
+    Covers: stock-IN increases current_stock, stock-OUT decreases it,
+    negative-stock validation, cross-shop transaction isolation, and the
+    invariant that ProductForm does not accept a quantity field.
+    """
+
+    def setUp(self):
+        self.user, self.shop = _make_shop_user("txn_user", "Txn Shop")
+        self.product = _make_product(self.shop, name="Widget", sku="WGT-001")
+        self.client.login(username="txn_user", password="password123")
+
+    def _post_stock_in(self, product, qty, notes=""):
+        return self.client.post(reverse("inventory"), {
+            "action": "stock_in",
+            "product": product.pk,
+            "quantity": qty,
+            "notes": notes,
+        })
+
+    def _post_stock_out(self, product, qty, notes=""):
+        return self.client.post(reverse("inventory"), {
+            "action": "stock_out",
+            "product": product.pk,
+            "quantity": qty,
+            "notes": notes,
+        })
+
+    def test_stock_in_increases_current_stock(self):
+        """A valid Stock-In transaction raises current_stock by the given qty."""
+        resp = self._post_stock_in(self.product, 50)
+        self.assertRedirects(resp, reverse("inventory"))
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 50)
+
+        # Confirm the Transaction record exists and is linked to the shop
+        txn = Transaction.objects.get(product=self.product, type="IN")
+        self.assertEqual(txn.quantity, 50)
+        self.assertEqual(txn.shop, self.shop)
+
+    def test_stock_out_decreases_current_stock(self):
+        """A valid Stock-Out transaction lowers current_stock by the given qty."""
+        # First bring stock up to 100
+        self._post_stock_in(self.product, 100)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 100)
+
+        resp = self._post_stock_out(self.product, 30)
+        self.assertRedirects(resp, reverse("inventory"))
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 70)
+
+        txn = Transaction.objects.get(product=self.product, type="OUT")
+        self.assertEqual(txn.quantity, 30)
+
+    def test_stock_out_below_zero_rejected(self):
+        """A Stock-Out exceeding current_stock must be rejected with a form error
+        and must NOT change current_stock or create a Transaction record."""
+        # current_stock is 0 — trying to remove 10 must fail
+        resp = self._post_stock_out(self.product, 10)
+
+        # Should NOT redirect — form re-renders with error
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Cannot remove")
+
+        # current_stock must remain 0
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 0)
+
+        # No Transaction record should have been created
+        self.assertFalse(Transaction.objects.filter(product=self.product, type="OUT").exists())
+
+    def test_transaction_not_visible_to_other_shop(self):
+        """Transactions from Shop A must not appear in Shop B's history."""
+        # Create a stock-in for Shop A's product
+        self._post_stock_in(self.product, 20)
+        self.client.logout()
+
+        # Log in as a completely different shop's user
+        other_user, other_shop = _make_shop_user("other_user", "Other Shop")
+        self.client.login(username="other_user", password="password123")
+
+        resp = self.client.get(reverse("transactions"))
+        self.assertEqual(resp.status_code, 200)
+
+        # The transaction list in context must be empty for the other shop
+        self.assertEqual(
+            resp.context["transactions"].count(), 0,
+            "Shop B's transactions view must not expose Shop A's transactions.",
+        )
+        self.assertNotContains(resp, "WGT-001")
+
+    def test_add_product_form_ignores_quantity_field(self):
+        """Submitting a quantity field with add_product must be silently ignored —
+        the product should always start at current_stock=0."""
+        resp = self.client.post(reverse("inventory"), {
+            "action": "add_product",
+            "name": "Sneaky Product",
+            "sku": "SNK-001",
+            "unit_price": "5.00",
+            "category": "Test",
+            "reorder_level": 1,
+            "description": "",
+            # Attacker/tester tries to inject an initial quantity via POST
+            "quantity": 9999,
+            "current_stock": 9999,
+        })
+
+        self.assertRedirects(resp, reverse("inventory"))
+        product = Product.objects.get(sku="SNK-001")
+        self.assertEqual(
+            product.current_stock, 0,
+            "current_stock must be 0 regardless of any quantity/current_stock in POST data.",
         )
