@@ -4,69 +4,143 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>Product Catalog</h2>
-    <p>Browse and search the read-only inventory catalog.</p>
+    <h2>{% if show_archived %}Archived Products{% else %}Product Catalog{% endif %}</h2>
+    <p>{% if show_archived %}Products archived due to transaction history — restore or view records.{% else %}Browse, search, edit, and manage your active inventory catalog.{% endif %}</p>
 </div>
 
 <div class="products-grid single-panel">
     <section class="panel">
-        {% if products %}
-            <div class="filter-search-box">
-                <div class="search-box" style="width: 100%; max-width: 400px;">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="product-search" placeholder="Search catalog by product name or SKU...">
-                </div>
+        <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+            <h3>
+                {% if show_archived %}
+                    <i class="fa-solid fa-box-archive"></i> Archived
+                {% else %}
+                    <i class="fa-solid fa-boxes-stacked"></i> Active Products
+                {% endif %}
+            </h3>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                {# Archive toggle #}
+                {% if show_archived %}
+                    <a href="{% url 'products' %}" class="secondary-btn">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Active
+                    </a>
+                {% else %}
+                    <a href="{% url 'products' %}?archived=1" class="secondary-btn"
+                       title="View archived products">
+                        <i class="fa-solid fa-box-archive"></i>
+                        Archived
+                        {% if archived_count > 0 %}
+                            <span class="badge-count">{{ archived_count }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
+                {# Search box — only in active view #}
+                {% if not show_archived %}
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="product-search" placeholder="Search by name or SKU…">
+                    </div>
+                {% endif %}
             </div>
+        </div>
 
+        {% if products %}
             <div class="table-wrapper">
                 <table class="products-table" id="products-table">
                     <thead>
                         <tr>
                             <th>Product Name</th>
                             <th>SKU</th>
-                            <th>Current Stock</th>
+                            <th>{% if show_archived %}Last Stock{% else %}Current Stock{% endif %}</th>
                             <th>Unit Price</th>
                             <th>Category</th>
+                            {% if not show_archived %}<th>Status</th>{% endif %}
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for product in products %}
-                            <tr>
+                            <tr {% if show_archived %}class="row-archived"{% endif %}>
                                 <td><strong>{{ product.name }}</strong></td>
                                 <td><code>{{ product.sku }}</code></td>
                                 <td>{{ product.current_stock }}</td>
                                 <td>${{ product.unit_price }}</td>
                                 <td>{{ product.category|default:'-' }}</td>
+                                {% if not show_archived %}
+                                    <td>
+                                        <span class="stock-badge stock-badge--{{ product.stock_status }}">
+                                            {% if product.stock_status == 'ok' %}OK
+                                            {% elif product.stock_status == 'low' %}Low
+                                            {% else %}Out{% endif %}
+                                        </span>
+                                    </td>
+                                {% endif %}
+                                <td>
+                                    {% if show_archived %}
+                                        {# Restore action for archived products #}
+                                        <form method="post" action="{% url 'product_delete' product.pk %}" style="display:inline;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="restore">
+                                            <button type="submit" class="action-btn action-btn--restore"
+                                                    title="Restore to active catalog">
+                                                <i class="fa-solid fa-rotate-left"></i> Restore
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        {# Edit + Delete/Archive actions for active products #}
+                                        <div class="action-group">
+                                            <a href="{% url 'product_edit' product.pk %}"
+                                               class="action-btn action-btn--edit"
+                                               title="Edit product metadata">
+                                                <i class="fa-solid fa-pen"></i> Edit
+                                            </a>
+                                            <a href="{% url 'product_delete' product.pk %}"
+                                               class="action-btn action-btn--delete"
+                                               title="Delete or archive product">
+                                                <i class="fa-solid fa-trash"></i>
+                                                {% if product.transactions.exists %}Archive{% else %}Delete{% endif %}
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
-            <div class="empty-state-card" id="products-empty" style="display: none;">
-                <i class="fa-solid fa-magnifying-glass empty-icon"></i>
-                <h4>No matching products found</h4>
-                <p>Try searching with a different keyword or SKU.</p>
-            </div>
+
+            {% if not show_archived %}
+                <div class="empty-state-card" id="products-empty" style="display: none;">
+                    <i class="fa-solid fa-magnifying-glass empty-icon"></i>
+                    <h4>No matching products found</h4>
+                    <p>Try searching with a different keyword or SKU.</p>
+                </div>
+            {% endif %}
+
         {% else %}
             <div class="empty-state-card">
-                <i class="fa-solid fa-boxes-stacked empty-icon"></i>
-                <h4>No products added yet</h4>
-                <p>Add your first product from the <a href="{% url 'inventory' %}" style="color: var(--accent-color); font-weight: 600; underline;">Inventory page</a>.</p>
+                {% if show_archived %}
+                    <i class="fa-solid fa-box-archive empty-icon"></i>
+                    <h4>No archived products</h4>
+                    <p>Products archived due to transaction history will appear here.</p>
+                {% else %}
+                    <i class="fa-solid fa-boxes-stacked empty-icon"></i>
+                    <h4>No products added yet</h4>
+                    <p>Add your first product from the <a href="{% url 'inventory' %}" style="color: var(--accent-color); font-weight: 600;">Inventory page</a>.</p>
+                {% endif %}
             </div>
         {% endif %}
     </section>
 </div>
 
+{% if not show_archived %}
 <script>
     (function () {
         var searchInput = document.getElementById('product-search');
         var table = document.getElementById('products-table');
         var emptyMessage = document.getElementById('products-empty');
 
-        if (!searchInput || !table) {
-            return;
-        }
+        if (!searchInput || !table) { return; }
 
         var rows = table.querySelectorAll('tbody tr');
 
@@ -78,12 +152,8 @@
                 var name = row.children[0].textContent.toLowerCase();
                 var sku = row.children[1].textContent.toLowerCase();
                 var matches = name.indexOf(query) !== -1 || sku.indexOf(query) !== -1;
-
                 row.style.display = matches ? '' : 'none';
-
-                if (matches) {
-                    visibleCount += 1;
-                }
+                if (matches) { visibleCount += 1; }
             });
 
             if (emptyMessage) {
@@ -92,4 +162,5 @@
         });
     }());
 </script>
+{% endif %}
 {% endblock %}

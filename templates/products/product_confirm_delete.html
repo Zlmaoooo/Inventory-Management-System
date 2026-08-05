@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if has_transactions %}Archive{% else %}Delete{% endif %} {{ product.name }} | Invenza
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="breadcrumb">
+            <a href="{% url 'products' %}">Product Catalog</a>
+            <i class="fa-solid fa-chevron-right"></i>
+            {% if has_transactions %}Archive{% else %}Delete{% endif %} Product
+        </p>
+        <h2>Confirm: {{ product.name }}</h2>
+    </div>
+</div>
+
+<div class="products-grid single-panel">
+    <section class="panel" style="max-width: 600px;">
+
+        {# Product summary card #}
+        <div class="confirm-product-card">
+            <div class="confirm-product-meta">
+                <span class="confirm-product-name">{{ product.name }}</span>
+                <code class="confirm-product-sku">{{ product.sku }}</code>
+            </div>
+            <div class="confirm-product-detail">
+                <span>Stock: {{ product.current_stock }}</span>
+                <span>Price: ${{ product.unit_price }}</span>
+                {% if product.category %}<span>Category: {{ product.category }}</span>{% endif %}
+            </div>
+        </div>
+
+        {# Conditional warning / danger banner #}
+        {% if has_transactions %}
+            <div class="confirm-banner confirm-banner--warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                    <strong>This product will be archived, not permanently deleted.</strong>
+                    <p>
+                        It has <strong>{{ transaction_count }}</strong> transaction record{{ transaction_count|pluralize }} in history.
+                        Permanently deleting it would corrupt that audit trail.
+                        Archiving hides it from your active catalog and stock forms while
+                        keeping all transaction records intact.
+                    </p>
+                </div>
+            </div>
+        {% else %}
+            <div class="confirm-banner confirm-banner--danger">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>
+                    <strong>This product will be permanently deleted.</strong>
+                    <p>
+                        It has no transaction history, so it is safe to remove entirely.
+                        This action <strong>cannot be undone</strong>.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Action buttons #}
+        <div class="form-actions" style="margin-top: 24px;">
+            <form method="post" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <button type="submit"
+                        class="primary-btn {% if not has_transactions %}danger-btn{% endif %}">
+                    {% if has_transactions %}
+                        <i class="fa-solid fa-box-archive"></i> Archive Product
+                    {% else %}
+                        <i class="fa-solid fa-trash"></i> Permanently Delete
+                    {% endif %}
+                </button>
+            </form>
+            <a href="{% url 'products' %}" class="secondary-btn">
+                <i class="fa-solid fa-xmark"></i> Cancel
+            </a>
+        </div>
+
+    </section>
+</div>
+{% endblock %}

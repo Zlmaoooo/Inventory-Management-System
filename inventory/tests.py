@@ -383,3 +383,199 @@ class TransactionSystemTests(TestCase):
             product.current_stock, 0,
             "current_stock must be 0 regardless of any quantity/current_stock in POST data.",
         )
+
+
+# ---------------------------------------------------------------------------
+# Product edit / delete / archive tests
+# ---------------------------------------------------------------------------
+
+class ProductEditDeleteTests(TestCase):
+    """Tests for the product edit, delete, and archive lifecycle.
+
+    Covers: edit updates metadata but not stock, hard-delete with no
+    transactions, archive-instead-of-delete with transaction history,
+    archived product exclusion from stock dropdowns, and cross-shop
+    isolation on edit/delete endpoints.
+    """
+
+    def setUp(self):
+        self.user, self.shop = _make_shop_user("edit_user", "Edit Shop")
+        self.product = _make_product(self.shop, name="Original Name", sku="ORIG-001")
+        self.client.login(username="edit_user", password="password123")
+
+    # ------------------------------------------------------------------
+    # 1. Edit updates metadata but NOT current_stock
+    # ------------------------------------------------------------------
+
+    def test_edit_product_updates_fields_but_not_stock(self):
+        """POST to the edit URL changes name, unit_price etc. but leaves
+        current_stock untouched even if an attacker injects it in POST data."""
+        # Give the product some stock via a transaction first
+        self.client.post(reverse("inventory"), {
+            "action": "stock_in",
+            "product": self.product.pk,
+            "quantity": 42,
+        })
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 42)
+
+        # Now edit the product — include a bogus current_stock in POST
+        resp = self.client.post(
+            reverse("product_edit", args=[self.product.pk]),
+            {
+                "name": "Updated Name",
+                "sku": "ORIG-001",
+                "unit_price": "99.99",
+                "category": "Updated",
+                "reorder_level": 10,
+                "description": "Changed.",
+                "current_stock": 9999,  # should be silently ignored
+            },
+        )
+        self.assertRedirects(resp, reverse("products"))
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Updated Name")
+        self.assertEqual(str(self.product.unit_price), "99.99")
+        # current_stock must be unchanged — still 42, not 9999
+        self.assertEqual(
+            self.product.current_stock, 42,
+            "current_stock must not be changeable via the edit form.",
+        )
+
+    # ------------------------------------------------------------------
+    # 2. Hard-delete when no transactions
+    # ------------------------------------------------------------------
+
+    def test_delete_product_with_no_transactions_removes_it(self):
+        """A product with zero transaction history is permanently deleted on POST."""
+        pk = self.product.pk
+        self.assertFalse(self.product.transactions.exists())
+
+        resp = self.client.post(
+            reverse("product_delete", args=[pk]),
+            {"action": "delete"},
+        )
+        self.assertRedirects(resp, reverse("products"))
+
+        # Row must be completely gone from the DB
+        self.assertFalse(
+            Product.all_objects.filter(pk=pk).exists(),
+            "Product with no transactions should be permanently deleted.",
+        )
+
+    # ------------------------------------------------------------------
+    # 3. Archive instead of delete when transactions exist
+    # ------------------------------------------------------------------
+
+    def test_delete_product_with_transactions_archives_instead(self):
+        """A product with transaction history gets is_active=False, not deleted."""
+        # Create a stock-in transaction so history exists
+        self.client.post(reverse("inventory"), {
+            "action": "stock_in",
+            "product": self.product.pk,
+            "quantity": 10,
+        })
+        self.assertTrue(self.product.transactions.exists())
+
+        pk = self.product.pk
+        resp = self.client.post(
+            reverse("product_delete", args=[pk]),
+            {"action": "delete"},
+        )
+        self.assertRedirects(resp, reverse("products"))
+
+        # Product row must still exist (transaction FK integrity)
+        self.product.refresh_from_db()
+        self.assertFalse(
+            self.product.is_active,
+            "Product with transactions must be archived (is_active=False), not deleted.",
+        )
+
+        # Must NOT appear in the default (active) queryset
+        self.assertFalse(
+            Product.objects.filter(pk=pk).exists(),
+            "Archived product must be excluded from the default Product queryset.",
+        )
+
+        # Must appear via all_objects (row preserved for transaction FK)
+        self.assertTrue(
+            Product.all_objects.filter(pk=pk).exists(),
+            "Archived product row must still exist in all_objects for transaction history.",
+        )
+
+    # ------------------------------------------------------------------
+    # 4. Archived products excluded from stock movement dropdown
+    # ------------------------------------------------------------------
+
+    def test_archived_products_excluded_from_stock_movement_dropdown(self):
+        """After archiving, the product must not appear in StockInForm's
+        product queryset (which is shop-scoped via the default manager)."""
+        from .forms import StockInForm
+
+        # Verify it's in the dropdown while active
+        form_before = StockInForm(shop=self.shop)
+        self.assertIn(
+            self.product,
+            list(form_before.fields["product"].queryset),
+            "Active product should be in the stock-in dropdown.",
+        )
+
+        # Archive the product (simulate: set is_active=False directly)
+        self.product.is_active = False
+        self.product.save()
+
+        # Now it must be gone from the dropdown
+        form_after = StockInForm(shop=self.shop)
+        self.assertNotIn(
+            self.product,
+            list(form_after.fields["product"].queryset),
+            "Archived product must not appear in the stock-in dropdown.",
+        )
+
+    # ------------------------------------------------------------------
+    # 5. Cross-shop isolation on edit and delete endpoints
+    # ------------------------------------------------------------------
+
+    def test_cannot_edit_or_delete_another_shops_product(self):
+        """User B cannot edit or delete Shop A's products — both endpoints must
+        redirect to the products page without making any changes."""
+        other_user, other_shop = _make_shop_user("other_edit_user", "Other Shop")
+        self.client.login(username="other_edit_user", password="password123")
+
+        original_name = self.product.name
+        pk = self.product.pk
+
+        # Attempt edit
+        edit_resp = self.client.post(
+            reverse("product_edit", args=[pk]),
+            {
+                "name": "Hacked Name",
+                "sku": "HACK-001",
+                "unit_price": "0.01",
+                "category": "Hacked",
+                "reorder_level": 0,
+                "description": "",
+            },
+        )
+        self.assertRedirects(edit_resp, reverse("products"))
+
+        # Product must be unchanged
+        self.product.refresh_from_db()
+        self.assertEqual(
+            self.product.name, original_name,
+            "Cross-shop edit attempt must not change the product name.",
+        )
+
+        # Attempt delete
+        delete_resp = self.client.post(
+            reverse("product_delete", args=[pk]),
+            {"action": "delete"},
+        )
+        self.assertRedirects(delete_resp, reverse("products"))
+
+        # Product must still exist and still be active
+        self.assertTrue(
+            Product.all_objects.filter(pk=pk, is_active=True).exists(),
+            "Cross-shop delete attempt must not delete or archive the product.",
+        )

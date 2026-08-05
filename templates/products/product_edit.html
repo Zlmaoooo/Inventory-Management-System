@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ product.name }} | Invenza{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="breadcrumb">
+            <a href="{% url 'products' %}">Product Catalog</a>
+            <i class="fa-solid fa-chevron-right"></i>
+            Edit Product
+        </p>
+        <h2>Edit: {{ product.name }}</h2>
+        <p>Update product metadata. Stock levels can only be changed via Stock In / Out transactions.</p>
+    </div>
+</div>
+
+<div class="products-grid single-panel">
+    <section class="panel" style="max-width: 680px;">
+        <div class="panel-header">
+            <h3><i class="fa-solid fa-pen"></i> Product Details</h3>
+            {% if not product.is_active %}
+                <span class="archived-badge"><i class="fa-solid fa-box-archive"></i> Archived</span>
+            {% endif %}
+        </div>
+
+        {# Read-only current stock display — not an input #}
+        <div class="form-row readonly-field">
+            <label>Current Stock</label>
+            <div class="readonly-value">
+                <span class="stock-badge stock-badge--{{ product.stock_status }}">
+                    {{ product.current_stock }} units
+                </span>
+                <span class="readonly-hint">
+                    <i class="fa-solid fa-lock"></i>
+                    Managed via Stock In / Out transactions only
+                </span>
+            </div>
+        </div>
+
+        <form method="post" class="product-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-row">
+                <label for="{{ form.name.id_for_label }}">Product Name</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.sku.id_for_label }}">SKU</label>
+                <p class="field-help">Must be unique within your shop.</p>
+                {{ form.sku }}
+                {{ form.sku.errors }}
+            </div>
+
+            <div class="form-row two-col">
+                <div>
+                    <label for="{{ form.unit_price.id_for_label }}">Unit Price</label>
+                    {{ form.unit_price }}
+                    {{ form.unit_price.errors }}
+                </div>
+                <div>
+                    <label for="{{ form.reorder_level.id_for_label }}">Reorder Level</label>
+                    <p class="field-help">Alert threshold.</p>
+                    {{ form.reorder_level }}
+                    {{ form.reorder_level.errors }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+                {{ form.category.errors }}
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <a href="{% url 'products' %}" class="secondary-btn">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
