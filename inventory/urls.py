@@ -6,6 +6,8 @@ from .views import (
     landing_view,
     login_view,
     logout_view,
+    product_delete_view,
+    product_edit_view,
     products_view,
     profile_edit_view,
     profile_view,
@@ -35,4 +37,6 @@ urlpatterns = [
     path("settings/", settings_view, name="settings"),
     path("profile/", profile_view, name="profile"),
     path("profile/edit/", profile_edit_view, name="profile_edit"),
+    path("products/<int:pk>/edit/", product_edit_view, name="product_edit"),
+    path("products/<int:pk>/delete/", product_delete_view, name="product_delete"),
 ]

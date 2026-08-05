@@ -8,7 +8,7 @@ from django.db import models, transaction as db_transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
-from .forms import ProductForm, ShopEditForm, ShopForm, StockInForm, StockOutForm
+from .forms import ProductEditForm, ProductForm, ShopEditForm, ShopForm, StockInForm, StockOutForm
 from .models import Product, Profile, Shop, Transaction
 
 
@@ -235,10 +235,120 @@ def dashboard_view(request):
 
 @shop_required
 def products_view(request):
-    # Only show products that belong to the logged-in user's own shop.
+    """Product catalog page.
+
+    Default view shows only active products (is_active=True) via the default
+    ActiveProductManager. Passing ?archived=1 switches to the archived view
+    which shows soft-deleted products so they can be inspected or restored.
+    """
     shop = request.user.profile.shop
-    products = Product.objects.filter(shop=shop)
-    return render(request, "products/products.html", {"products": products})
+    show_archived = request.GET.get("archived") == "1"
+
+    if show_archived:
+        products = Product.all_objects.filter(shop=shop, is_active=False)
+    else:
+        # Default manager already filters is_active=True
+        products = Product.objects.filter(shop=shop)
+
+    archived_count = Product.all_objects.filter(shop=shop, is_active=False).count()
+
+    context = {
+        "products": products,
+        "show_archived": show_archived,
+        "archived_count": archived_count,
+    }
+    return render(request, "products/products.html", context)
+
+
+@shop_required
+def product_edit_view(request, pk):
+    """Edit a product's metadata (name, SKU, unit_price, category, reorder_level,
+    description). current_stock is NOT editable here.
+
+    Uses all_objects so archived products can still be edited (e.g., to fix
+    a typo before restoring them). Shop isolation is enforced manually.
+    """
+    shop = request.user.profile.shop
+    try:
+        product = Product.all_objects.get(pk=pk)
+    except Product.DoesNotExist:
+        return redirect("products")
+
+    # Isolation check — same pattern as all other shop-scoped operations.
+    if product.shop != shop:
+        return redirect("products")
+
+    form = ProductEditForm(request.POST or None, instance=product)
+
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"\"{product.name}\" updated successfully.")
+            return redirect("products")
+
+    context = {
+        "form": form,
+        "product": product,
+    }
+    return render(request, "products/product_edit.html", context)
+
+
+@shop_required
+def product_delete_view(request, pk):
+    """Delete or archive a product, with a confirmation step on GET.
+
+    Logic on POST:
+      - action=restore  → set is_active=True (un-archive).
+      - has transactions → set is_active=False (soft-delete / archive).
+      - no transactions  → Product.delete() (hard delete).
+
+    Uses all_objects so archived products can be restored or inspected.
+    Shop isolation is enforced manually.
+    """
+    shop = request.user.profile.shop
+    try:
+        product = Product.all_objects.get(pk=pk)
+    except Product.DoesNotExist:
+        return redirect("products")
+
+    # Isolation check.
+    if product.shop != shop:
+        return redirect("products")
+
+    has_transactions = product.transactions.exists()
+
+    if request.method == "POST":
+        action = request.POST.get("action", "delete")
+
+        if action == "restore":
+            product.is_active = True
+            product.save()
+            messages.success(request, f"\"{product.name}\" has been restored to the active catalog.")
+            return redirect("products")
+
+        # Delete or archive
+        if has_transactions:
+            product.is_active = False
+            product.save()
+            messages.warning(
+                request,
+                f"\"{product.name}\" has been archived — it has transaction history "
+                f"and cannot be permanently deleted.",
+            )
+        else:
+            product_name = product.name
+            product.delete()
+            messages.success(request, f"\"{product_name}\" has been permanently deleted.")
+
+        return redirect("products")
+
+    # GET — render confirmation page
+    context = {
+        "product": product,
+        "has_transactions": has_transactions,
+        "transaction_count": product.transactions.count(),
+    }
+    return render(request, "products/product_confirm_delete.html", context)
 
 
 @shop_required
