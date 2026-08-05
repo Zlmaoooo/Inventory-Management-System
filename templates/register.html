@@ -26,10 +26,10 @@
             <form method="post" action="{% url 'register' %}" class="login-form">
                 {% csrf_token %}
 
-                {% if error %}
+                {% if form.non_field_errors %}
                     <div class="login-error-alert" role="alert">
                         <i class="fa-solid fa-circle-exclamation"></i>
-                        <span>{{ error }}</span>
+                        <span>{{ form.non_field_errors|striptags }}</span>
                     </div>
                 {% endif %}
 
@@ -37,16 +37,18 @@
                     <label for="username">Username</label>
                     <div class="input-with-icon">
                         <i class="fa-solid fa-user"></i>
-                        <input type="text" id="username" name="username" placeholder="Choose a username" value="{{ form_data.username|default:'' }}" required autofocus autocomplete="username">
+                        <input type="text" id="username" name="username" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" required autofocus autocomplete="username">
                     </div>
+                    {% if form.username.errors %}<div class="field-error">{{ form.username.errors|striptags }}</div>{% endif %}
                 </div>
 
                 <div class="form-row">
                     <label for="email">Email Address</label>
                     <div class="input-with-icon">
                         <i class="fa-solid fa-envelope"></i>
-                        <input type="email" id="email" name="email" placeholder="name@company.com" value="{{ form_data.email|default:'' }}" required autocomplete="email">
+                        <input type="email" id="email" name="email" placeholder="name@company.com" value="{{ form.email.value|default:'' }}" required autocomplete="email">
                     </div>
+                    {% if form.email.errors %}<div class="field-error">{{ form.email.errors|striptags }}</div>{% endif %}
                 </div>
 
                 <div class="form-row">
@@ -55,6 +57,7 @@
                         <i class="fa-solid fa-lock"></i>
                         <input type="password" id="password" name="password" placeholder="Create a password" required autocomplete="new-password">
                     </div>
+                    {% if form.password.errors %}<div class="field-error">{{ form.password.errors|striptags }}</div>{% endif %}
                 </div>
 
                 <div class="form-row">
@@ -63,6 +66,7 @@
                         <i class="fa-solid fa-shield-halved"></i>
                         <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required autocomplete="new-password">
                     </div>
+                    {% if form.confirm_password.errors %}<div class="field-error">{{ form.confirm_password.errors|striptags }}</div>{% endif %}
                 </div>
 
                 <button type="submit" class="primary-btn login-btn">

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static socialaccount %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,6 +128,20 @@
                         <span>Log In</span>
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
+
+                    <a class="lp-forgot-link" href="{% url 'password_reset' %}">Forgot password?</a>
+
+                    <div class="lp-social-divider" aria-hidden="true">
+                        <span></span>
+                        <p>or continue with</p>
+                        <span></span>
+                    </div>
+
+                    {% load socialaccount %}
+                    <a class="lp-social-btn lp-google-btn" href="{% provider_login_url 'google' process='login' %}">
+                        <i class="fa-brands fa-google"></i>
+                        <span>Sign in with Google</span>
+                    </a>
                 </form>
 
                 <p class="lp-admin-note">

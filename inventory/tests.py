@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 
 from .models import Product, Profile, Shop, Transaction
@@ -43,31 +45,29 @@ class RegistrationAndLandingViewsTests(TestCase):
         self.assertContains(response, "Inventory")
         self.assertContains(response, "under control")
 
-    def test_landing_login_accepts_username_or_email(self):
-        """After login, a user without a Shop is redirected to shop_create.
-        A user WITH a Shop (created here) lands on dashboard.
-        We use follow=True so assertRedirects can chase the full chain."""
+    def test_login_with_username_works(self):
         user, shop = _make_shop_user("emailuser", "Email User Shop")
         user.email = "emailuser@example.com"
         user.save()
 
-        # Login by username
-        username_response = self.client.post(
+        response = self.client.post(
             reverse("landing"),
             {"username": user.username, "password": "password123"},
             follow=True,
         )
-        self.assertRedirects(username_response, reverse("dashboard"))
+        self.assertRedirects(response, reverse("dashboard"))
 
-        self.client.logout()
+    def test_login_with_email_works(self):
+        user, shop = _make_shop_user("emailuser", "Email User Shop")
+        user.email = "emailuser@example.com"
+        user.save()
 
-        # Login by email
-        email_response = self.client.post(
+        response = self.client.post(
             reverse("landing"),
             {"username": user.email, "password": "password123"},
             follow=True,
         )
-        self.assertRedirects(email_response, reverse("dashboard"))
+        self.assertRedirects(response, reverse("dashboard"))
 
     def test_successful_user_registration(self):
         """Registration sends the new user to shop_create (onboarding step 2),
@@ -98,6 +98,45 @@ class RegistrationAndLandingViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Passwords do not match")
         self.assertFalse(User.objects.filter(username="mismatchuser").exists())
+
+    def test_registration_rejects_duplicate_email(self):
+        existing = User.objects.create_user(
+            username="existing",
+            email="duplicate@example.com",
+            password="password123",
+        )
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "newuser",
+                "email": existing.email,
+                "password": "password123",
+                "confirm_password": "password123",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "An account with this email already exists.")
+        self.assertFalse(User.objects.filter(username="newuser").exists())
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_password_reset_flow_sends_email(self):
+        user = User.objects.create_user(
+            username="resetuser",
+            email="resetuser@example.com",
+            password="password123",
+        )
+
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": user.email},
+        )
+
+        self.assertRedirects(response, reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(user.email, mail.outbox[0].to)
+        self.assertIn("/accounts/reset/", mail.outbox[0].body)
 
 
 class InventoryAndProductsViewsTests(TestCase):

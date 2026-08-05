@@ -461,6 +461,74 @@ button, input { font-family: inherit; font-size: inherit; }
     transform: translateX(3px);
 }
 
+.lp-forgot-link {
+    align-self: flex-end;
+    margin-top: -4px;
+    font-size: 0.78rem;
+    color: var(--lp-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 150ms ease;
+}
+
+.lp-forgot-link:hover {
+    color: var(--lp-teal);
+}
+
+.lp-social-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--lp-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+}
+
+.lp-social-divider span {
+    flex: 1;
+    height: 1px;
+    background: var(--lp-edge);
+}
+
+.lp-social-divider p {
+    white-space: nowrap;
+}
+
+.lp-social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    border-radius: var(--lp-radius);
+    padding: 11px 18px;
+    border: 1px solid var(--lp-edge2);
+    background: linear-gradient(180deg, rgba(24, 28, 38, 0.96), rgba(19, 22, 29, 0.96));
+    color: var(--lp-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: border-color 150ms ease, transform 100ms ease, box-shadow 150ms ease;
+}
+
+.lp-social-btn:hover {
+    border-color: var(--lp-teal);
+    box-shadow: 0 4px 16px rgba(45, 212, 191, 0.16);
+}
+
+.lp-social-btn:active {
+    transform: translateY(1px);
+}
+
+.lp-social-btn i {
+    font-size: 0.95rem;
+}
+
+.lp-google-btn i {
+    color: #F97316;
+}
+
 /* Admin note */
 .lp-admin-note {
     margin-top: 22px;

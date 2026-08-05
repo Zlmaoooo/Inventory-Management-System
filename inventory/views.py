@@ -8,7 +8,8 @@ from django.db import models, transaction as db_transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
-from .forms import ProductEditForm, ProductForm, ShopEditForm, ShopForm, StockInForm, StockOutForm
+from .auth_utils import get_post_auth_redirect_url
+from .forms import RegistrationForm, ProductEditForm, ProductForm, ShopEditForm, ShopForm, StockInForm, StockOutForm
 from .models import Product, Profile, Shop, Transaction
 
 
@@ -62,15 +63,10 @@ def landing_view(request):
     if request.method == "POST":
         username_input = request.POST.get("username", "").strip()
         password_input = request.POST.get("password", "").strip()
-        user = User.objects.filter(
-            models.Q(username__iexact=username_input) | models.Q(email__iexact=username_input)
-        ).first()
-        if user is not None:
-            user = authenticate(request, username=user.username, password=password_input)
+        user = authenticate(request, username=username_input, password=password_input)
         if user is not None:
             login(request, user)
-            next_url = request.GET.get("next", "dashboard")
-            return redirect(next_url if next_url else "dashboard")
+            return redirect(get_post_auth_redirect_url(request, user, request.GET.get("next", "")))
         else:
             error = "Invalid username or email or password. Please try again."
             form_data = {"username": username_input}
@@ -92,39 +88,18 @@ def register_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
 
-    error = None
-    if request.method == "POST":
-        username_input = request.POST.get("username", "").strip()
-        email_input = request.POST.get("email", "").strip()
-        password_input = request.POST.get("password", "").strip()
-        confirm_password = request.POST.get("confirm_password", "").strip()
+    form = RegistrationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = User.objects.create_user(
+            username=form.cleaned_data["username"],
+            email=form.cleaned_data["email"],
+            password=form.cleaned_data["password"],
+        )
+        login(request, user, backend="inventory.auth_backends.UsernameOrEmailBackend")
+        messages.success(request, f"Welcome to Invenza, {user.username}! Now let's set up your shop.")
+        return redirect("shop_create")
 
-        if not username_input or not email_input or not password_input:
-            error = "All fields are required."
-        elif password_input != confirm_password:
-            error = "Passwords do not match. Please re-enter your password."
-        elif len(password_input) < 6:
-            error = "Password must be at least 6 characters long."
-        elif User.objects.filter(username=username_input).exists():
-            error = f"Username '{username_input}' is already taken. Please choose another."
-        elif User.objects.filter(email=email_input).exists():
-            error = f"An account with email '{email_input}' already exists."
-        else:
-            user = User.objects.create_user(
-                username=username_input,
-                email=email_input,
-                password=password_input
-            )
-            login(request, user)
-            messages.success(request, f"Welcome to Invenza, {user.username}! Now let's set up your shop.")
-            # Redirect to shop onboarding — NOT dashboard (profile/shop not set up yet)
-            return redirect("shop_create")
-
-    context = {
-        "error": error,
-        "form_data": request.POST if request.method == "POST" else {}
-    }
-    return render(request, "register.html", context)
+    return render(request, "register.html", {"form": form})
 
 
 @never_cache

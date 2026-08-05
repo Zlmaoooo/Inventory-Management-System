@@ -1,6 +1,51 @@
 from django import forms
+from django.contrib.auth.models import User
 
 from .models import Product, Shop, Supplier, Transaction
+
+
+class RegistrationForm(forms.Form):
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Choose a username"}),
+        label="Username",
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={"placeholder": "name@company.com"}),
+        label="Email Address",
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Create a password"}),
+        label="Password",
+        min_length=6,
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Confirm your password"}),
+        label="Confirm Password",
+        min_length=6,
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError(
+                f"Username '{username}' is already taken. Please choose another."
+            )
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "Passwords do not match. Please re-enter your password.")
+        return cleaned_data
 
 
 class ProductForm(forms.ModelForm):
