@@ -23,14 +23,16 @@ class SupplierAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "sku", "current_stock", "unit_price", "category", "reorder_level", "shop", "created_at")
+    list_display = ("name", "sku", "current_stock", "is_active", "unit_price", "category", "reorder_level", "shop", "created_at")
     search_fields = ("name", "sku", "category")
-    list_filter = ("category", "shop")
+    list_filter = ("category", "shop", "is_active")
     # current_stock must NEVER be hand-edited in the admin — it is the
     # exclusive responsibility of the Transaction post_save signal.
-    # Listing it in readonly_fields means it is visible for inspection
-    # but cannot be modified through the admin panel.
     readonly_fields = ("current_stock", "created_at", "updated_at")
+
+    def get_queryset(self, request):
+        """Return all products including archived ones in the admin."""
+        return Product.all_objects.all()
 
 
 @admin.register(Transaction)

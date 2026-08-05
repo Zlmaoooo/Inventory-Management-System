@@ -5,6 +5,22 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
+# ---------------------------------------------------------------------------
+# Custom manager: excludes archived products from the default queryset.
+# ---------------------------------------------------------------------------
+
+class ActiveProductManager(models.Manager):
+    """Default manager for Product — returns only active (non-archived) products.
+
+    Every Product.objects.filter(...) call automatically excludes archived
+    rows, so the is_active=True filter never has to be written explicitly.
+    Use Product.all_objects when you deliberately need archived rows
+    (admin panel, archive view, edit/delete views).
+    """
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
+
+
 class Shop(models.Model):
     """Represents a business / shop that owns this Invenza account."""
 
@@ -80,7 +96,20 @@ class Product(models.Model):
     by the post_save signal on Transaction. This invariant is enforced by:
       - ProductForm / ProductEditForm not including current_stock in fields.
       - ProductAdmin listing current_stock in readonly_fields.
+
+    is_active controls visibility. When False (archived), the product is
+    excluded from the default queryset (via ActiveProductManager), stock
+    movement dropdowns, and the default product list — but its row and all
+    its Transaction FKs are preserved so historical records remain intact.
+    Hard deletion is only allowed when transactions.exists() is False.
     """
+
+    # Default manager: active products only (is_active=True).
+    # All existing Product.objects.filter(...) calls are automatically correct.
+    objects = ActiveProductManager()
+    # Unfiltered manager: use explicitly where archived rows are needed
+    # (admin panel, archive view, edit/delete views, signal handler).
+    all_objects = models.Manager()
 
     shop = models.ForeignKey(
         Shop,
@@ -98,6 +127,9 @@ class Product(models.Model):
     category = models.CharField(max_length=80, blank=True)
     reorder_level = models.PositiveIntegerField(default=0)
     description = models.TextField(blank=True)
+    # is_active=False marks a product as archived (soft-deleted).
+    # Use Product.all_objects to query archived rows.
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
