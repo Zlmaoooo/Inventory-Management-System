@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import models, transaction as db_transaction
+from django.db import transaction as db_transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
