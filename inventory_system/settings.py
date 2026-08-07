@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+    "anymail",
     "inventory",
 ]
 
@@ -198,12 +199,10 @@ os.makedirs(STATIC_ROOT, exist_ok=True)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 if os.environ.get("RENDER") or not DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
-    DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER")
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    ANYMAIL = {
+        "BREVO_API_KEY": os.environ.get("BREVO_API_KEY"),
+    }
+    DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER", "noreply@invenza.com")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
