@@ -618,3 +618,73 @@ class ProductEditDeleteTests(TestCase):
             Product.all_objects.filter(pk=pk, is_active=True).exists(),
             "Cross-shop delete attempt must not delete or archive the product.",
         )
+
+
+class GoogleOAuthAccountLinkingTests(TestCase):
+    def test_google_login_with_existing_email_links_to_same_user_id(self):
+        """Confirm registering normally and then logging in via Google with the
+        same email connects to the exact same User ID without creating duplicates."""
+        from allauth.account.models import EmailAddress
+        from allauth.socialaccount.models import SocialAccount, SocialApp, SocialLogin
+        from allauth.socialaccount.helpers import complete_social_login
+        from django.contrib.sessions.middleware import SessionMiddleware
+        from django.test import RequestFactory
+
+        # 1. Register user normally
+        user = User.objects.create_user(
+            username="google_link_user",
+            email="googlelink@example.com",
+            password="password123",
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        initial_user_count = User.objects.filter(email="googlelink@example.com").count()
+        self.assertEqual(initial_user_count, 1)
+
+        request = RequestFactory().get("/")
+        middleware = SessionMiddleware(lambda req: None)
+        middleware.process_request(request)
+        request.session.save()
+        request.user = user
+
+        from allauth.socialaccount.adapter import get_adapter
+        social_adapter = get_adapter(request)
+        provider = social_adapter.get_provider(request, "google")
+
+        # 3. Simulate Google OAuth login with matching email
+        account = SocialAccount(
+            provider="google",
+            uid="google-uid-99999",
+            extra_data={"email": "googlelink@example.com", "email_verified": True},
+        )
+        sociallogin = SocialLogin(user=User(email="googlelink@example.com"), account=account)
+        sociallogin.provider = provider
+        sociallogin.email_addresses = [
+            EmailAddress(email="googlelink@example.com", verified=True, primary=True)
+        ]
+        # Perform social login lookup and connect social account
+        sociallogin.lookup()
+        self.assertTrue(sociallogin.is_existing)
+        account = sociallogin.account
+        account.user = sociallogin.user or user
+        account.save()
+
+        # 3. Assert no duplicate user was created
+        final_user_count = User.objects.filter(email="googlelink@example.com").count()
+        self.assertEqual(
+            final_user_count, 1,
+            "Google login with matching email must NOT create a duplicate User row."
+        )
+
+        # 4. Assert social account connects to the exact same User ID
+        linked_account = SocialAccount.objects.get(uid="google-uid-99999")
+        self.assertEqual(
+            linked_account.user_id, user.id,
+            "Google SocialAccount must be linked to the existing user's ID."
+        )
+

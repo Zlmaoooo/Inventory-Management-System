@@ -95,6 +95,15 @@ def register_view(request):
             email=form.cleaned_data["email"],
             password=form.cleaned_data["password"],
         )
+        try:
+            from allauth.account.models import EmailAddress
+            EmailAddress.objects.get_or_create(
+                user=user,
+                email=user.email,
+                defaults={"verified": True, "primary": True},
+            )
+        except Exception:
+            pass
         login(request, user, backend="inventory.auth_backends.UsernameOrEmailBackend")
         messages.success(request, f"Welcome to Invenza, {user.username}! Now let's set up your shop.")
         return redirect("shop_create")
