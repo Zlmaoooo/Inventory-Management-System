@@ -206,3 +206,5 @@ if os.environ.get("RENDER") or not DEBUG:
     DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER", "noreply@invenza.com")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+print(f"[EMAIL_CONFIG] Active EMAIL_BACKEND: {EMAIL_BACKEND} | DEFAULT_FROM_EMAIL: {DEFAULT_FROM_EMAIL} | RENDER: {os.environ.get('RENDER')} | DEBUG: {DEBUG}")
